@@ -33,4 +33,4 @@ You also can collect fits to the zernike parameters of individual stars via call
 # TODO
 
     - The code is getting tripped up on whether I mean to use the name of a file, or its name and extension, or the full path. I should be able to run this code anywhere, not just in the y3pipeline.
-    - now that I have a successful run under my belt, I need to check the memory and tiem usages to put something more sane in
+    - now that I have a successful run under my belt, I need to check the memory and time use to put something more sane in
