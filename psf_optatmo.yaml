@@ -1,0 +1,149 @@
+# Copyright (c) 2016 by Mike Jarvis and the other collaborators on GitHub at
+# https://github.com/rmjarvis/Piff  All rights reserved.
+#
+# Piff is free software: Redistribution and use in source and binary forms
+# with or without modification, are permitted provided that the following
+# conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the disclaimer given in the accompanying LICENSE
+#    file.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the disclaimer given in the documentation
+#    and/or other materials provided with the distribution.
+
+modules:
+    - galsim_extra
+
+input:
+
+    cat_file_name:
+        type: Eval
+        str: image_file_name.replace("psf_im", "psf_cat").replace(".fits.fz", ".fits")
+        simage_file_name: '@input.image_file_name'
+
+    chipnum:
+        type: Eval
+        str: image_file_name.split('_')[-1].split('.fits')[0]
+        simage_file_name: '@input.image_file_name'
+
+    # What hdu is everything in?
+    image_hdu: 1
+    badpix_hdu: 2
+    weight_hdu: 3
+    cat_hdu: 2
+
+    # What columns in the catalog have things we need?
+    x_col: x
+    y_col: y
+    ra: ra
+    dec: dec
+    gain: 1.0
+    sky_col: sky
+    use_col: use
+
+    # How large should the postage stamp cutouts of the stars be?
+    stamp_size: 25
+
+    # stick to well measured stars here
+    min_snr: 20
+
+    # practically remove max_snr limit
+    max_snr: 100
+
+psf:
+    type: OptAtmo
+    optical_psf_kwargs:
+        template: des
+    optatmo_psf_kwargs:
+        fix_g1: False
+        fix_g2: False
+        fix_zPupil004_zFocal001: False
+        fix_zPupil004_zFocal002: False
+        fix_zPupil004_zFocal003: False
+        fix_zPupil005_zFocal001: False
+        fix_zPupil005_zFocal002: False
+        fix_zPupil005_zFocal003: False
+        fix_zPupil006_zFocal001: False
+        fix_zPupil006_zFocal002: False
+        fix_zPupil006_zFocal003: False
+        fix_zPupil007_zFocal001: False
+        fix_zPupil007_zFocal002: False
+        fix_zPupil007_zFocal003: False
+        fix_zPupil008_zFocal001: False
+        fix_zPupil008_zFocal002: False
+        fix_zPupil008_zFocal003: False
+        fix_zPupil009_zFocal001: False
+        fix_zPupil009_zFocal002: False
+        fix_zPupil009_zFocal003: False
+        fix_zPupil010_zFocal001: False
+        fix_zPupil010_zFocal002: False
+        fix_zPupil010_zFocal003: False
+        fix_zPupil011_zFocal001: True
+        fix_zPupil011_zFocal002: True
+        fix_zPupil011_zFocal003: True
+    reference_wavefront:
+        type: DECamWavefront
+        file_name: /nfs/slac/g/ki/ki18/cpd/Projects/DES/Piff/piff/des/Science-20121120s1-v20i2.fits
+        extname: 1
+        n_neighbors: 10
+        weights: distance
+        algorithm: auto
+        p: 2
+    fit_optics_mode: shape
+    atmo_interp: none
+    n_optfit_stars: 500
+    fov_radius: 4500.
+    jmax_pupil: 11
+    jmax_focal: 3
+    min_optfit_snr: 50
+    analytic_coefs: /nfs/slac/g/ki/ki18/cpd/Projects/DES/Piff/piff/des/analytic_hsm_coefs.npy
+
+
+output:
+
+    # The output directory is by default the same as the input, but can specify a different one.
+    file_name: psf_optatmo.piff
+
+    stats:
+
+        # Multiple output statistics can be listed in a list
+        -
+            type: ShapeHistograms
+            file_name: shapes_optatmo.pdf
+            bins_size: 100
+            bins_shape: 100
+        -
+            type: Rho
+            file_name: rho_optatmo.pdf
+            # Rho can use any config parameters used by TreeCorr for doing the correlation.
+            min_sep: 0.1
+            max_sep: 300
+            sep_units: arcmin
+            bin_size: 0.2
+        -
+            type: TwoDHist
+            file_name: twodhist_optatmo.pdf
+            number_bins_u: 30
+            number_bins_v: 30
+        -
+            type: Star
+            file_name: stars_optatmo.pdf
+            adjust_stars: False
+            number_plot: 10
+
+# Set the verbosity level a little higher than default (1) to give extra information
+# about the progress.
+verbose: 2
+
+time: 2500
+memory: 2
+test_fraction: 0.2 # save 20 percent
+
+interps:
+    gpvonkarman:
+        type: GPInterp2pcf
+        kernel: 1e-2 * VonKarman(100, (1e-8, 1e5))
+    const_gpvonkarman:
+        type: GPInterp2pcf
+        kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))

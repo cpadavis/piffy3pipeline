@@ -1,0 +1,18 @@
+run_name: pipeline_v2_y3v29
+
+psf_dir: /nfs/slac/g/ki/ki19/des/cpd/y3_piff/exposures_v29_grizY
+# output base directory
+directory: /nfs/slac/g/ki/ki19/des/cpd/piff_test/y3pipeline
+
+# what psfs will be run
+psf_optics_files:
+    - psf_optatmo.yaml
+    # []
+
+psf_other_files:
+    - psf_pixelgrid.yaml
+    # []
+
+meanify:
+    hyper:
+        bin_spacing: 120  # arcsec

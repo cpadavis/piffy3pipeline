@@ -1,0 +1,120 @@
+# Copyright (c) 2016 by Mike Jarvis and the other collaborators on GitHub at
+# https://github.com/rmjarvis/Piff  All rights reserved.
+#
+# Piff is free software: Redistribution and use in source and binary forms
+# with or without modification, are permitted provided that the following
+# conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the disclaimer given in the accompanying LICENSE
+#    file.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the disclaimer given in the documentation
+#    and/or other materials provided with the distribution.
+
+modules:
+    - galsim_extra
+
+input:
+
+    cat_file_name:
+        type: Eval
+        str: image_file_name.replace("psf_im", "psf_cat").replace(".fits.fz", ".fits")
+        simage_file_name: '@input.image_file_name'
+
+    chipnum:
+        type: Eval
+        str: image_file_name.split('_')[-1].split('.fits')[0]
+        simage_file_name: '@input.image_file_name'
+
+    # What hdu is everything in?
+    image_hdu: 1
+    badpix_hdu: 2
+    weight_hdu: 3
+    cat_hdu: 2
+
+    # What columns in the catalog have things we need?
+    x_col: x
+    y_col: y
+    ra: ra
+    dec: dec
+    gain: 1.0
+    sky_col: sky
+    use_col: use
+
+    # How large should the postage stamp cutouts of the stars be?
+    stamp_size: 25
+
+    # cut poorly measured stars
+    min_snr: 20
+    # limit star snr so we don't weight bright stars
+    max_snr: 100
+
+psf:
+    # This type of PSF will use a separate model/interp solution for each chip.
+    type: SingleChip
+
+    outliers:
+
+        # This does outlier rejection based on the chisq value of the residual of the
+        # interpolated star with the original.
+        type: Chisq
+
+        # The threshold is given in terms of nsigma equivalent, since that's how we normally
+        # think of this, but really this is based on the chisq probability distribution for the
+        # number of degrees of freedom the model has.
+        nsigma: 4
+
+        # Only remove at most 10% stars per iteration.
+        max_remove: 0.1
+
+    model:
+        type: PixelGrid
+        scale: 0.26
+        size: 17
+        interp: Lanczos(5)
+        start_sigma: 0.8
+    interp:
+        type: BasisPolynomial
+        order: 3
+
+
+output:
+
+    # The output directory is by default the same as the input, but can specify a different one.
+    file_name: psf_pixelgrid.piff
+
+    stats:
+
+        # Multiple output statistics can be listed in a list
+        -
+            type: ShapeHistograms
+            file_name: shapes_pixelgrid.pdf
+            bins_size: 100
+            bins_shape: 100
+        -
+            type: Rho
+            file_name: rho_pixelgrid.pdf
+            # Rho can use any config parameters used by TreeCorr for doing the correlation.
+            min_sep: 0.1
+            max_sep: 300
+            sep_units: arcmin
+            bin_size: 0.2
+        -
+            type: TwoDHist
+            file_name: twodhist_pixelgrid.pdf
+            number_bins_u: 30
+            number_bins_v: 30
+        -
+            type: Star
+            file_name: stars_pixelgrid.pdf
+            adjust_stars: True
+            number_plot: 10
+
+# Set the verbosity level a little higher than default (1) to give extra information
+# about the progress.
+verbose: 1
+
+time: 600
+memory: 4
+test_fraction: 0.2 # save 20 percent
