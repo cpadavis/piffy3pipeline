@@ -20,10 +20,10 @@ def save_config(config, file_name):
     with open(file_name, 'w') as f:
         f.write(yaml.dump(config, default_flow_style=False))
 
-def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax):
+def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only):
 
     run_config = piff.read_config(run_config_path)
-    if meanify:
+    if meanify or fit_interp_only:
         psf_files = run_config['psf_optics_files']
     else:
         psf_files = run_config['psf_optics_files'] + run_config['psf_other_files']
@@ -81,6 +81,8 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 command = command + ['--print_log']
             if meanify:
                 command = command + ['--meanify_file_path', meanify_file_path]
+            if fit_interp_only:
+                command = command + ['--fit_interp_only']
 
             # call command
             skip_iter = False
@@ -97,7 +99,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 if not os.path.exists('{0}/{1}.piff'.format(job_directory, psf_name)):
                     continue
             else:
-                if overwrite:
+                if overwrite and not fit_interp_only:
                     file_names = glob.glob('{0}/{1}*'.format(job_directory, psf_name))
                     for file_name in file_names:
                         if '{0}.yaml'.format(psf_name) in file_name:
@@ -106,7 +108,16 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                             os.remove(file_name)
                 else:
                     if os.path.exists('{0}/{1}.piff'.format(job_directory, psf_name)):
-                        continue
+                        if fit_interp_only:
+                            pass
+                        else:
+                            continue
+                    else:
+                        if fit_interp_only:
+                            # need that piff file to exist in order to fit it
+                            continue
+                        else:
+                            pass
 
             if bsub:
                 logfile = '{0}/bsub_fit_psf_{1}.log'.format(job_directory, psf_name)
@@ -154,6 +165,8 @@ if __name__ == '__main__':
                         help='Overwrite existing output')
     parser.add_argument('--meanify', action='store_true', dest='meanify',
                         help='look for meanify outputs and do those')
+    parser.add_argument('--fit_interp_only', action='store_true', dest='fit_interp_only',
+                        help='if a PSF file exists, load it up')
     parser.add_argument('-n', action='store', dest='nmax', type=int, default=0, help='Number of fits to run')
     parser.add_argument(action='store', dest='run_config_path',
                         default='config.yaml',

@@ -50,49 +50,52 @@ def call_zernike(run_config_path, bsub, check, call):
         expids = [int(val.split('/')[-2]) for val in files]
 
         for expid in expids:
-            job_directory = '{0}/{1:08d}'.format(directory, expid)
-            job_name = 'zernike__expid_{0:08d}__{1}'.format(expid, piff_name)
+            for do_interp in [False, True]:
+                job_directory = '{0}/{1:08d}'.format(directory, expid)
+                job_name = 'zernike__expid_{0:08d}__{1}{2}'.format(expid, piff_name, ['', '_dointerp'][do_interp])
 
-            # create command
-            command = [
-                       'python',
-                       'zernike.py',
-                       '--directory', job_directory,
-                       '--piff_name', piff_name,
-                       '--config_file_name', psf_name,
-                       ]
+                # create command
+                command = [
+                           'python',
+                           'zernike_radial.py',
+                           '--directory', job_directory,
+                           '--piff_name', piff_name,
+                           '--config_file_name', psf_name,
+                           ]
+                if do_interp:
+                    command += ['--do_interp']
 
-            # call command
-            skip_iter = False
-            if check and bsub and call:
-                jobcheck = subprocess.check_output(['bjobs', '-wJ', job_name])
-                if job_name in jobcheck:
-                    print('skipping {0} because it is already running'.format(job_name))
-                    skip_iter = True
-            if skip_iter:
-                continue
+                # call command
+                skip_iter = False
+                if check and bsub and call:
+                    jobcheck = subprocess.check_output(['bjobs', '-wJ', job_name])
+                    if job_name in jobcheck:
+                        print('skipping {0} because it is already running'.format(job_name))
+                        skip_iter = True
+                if skip_iter:
+                    continue
 
-            if bsub:
-                logfile = '{0}/bsub_zernike_{1}.log'.format(job_directory, piff_name)
-                # check file exists, make it
-                if os.path.exists(logfile) and call:
-                    os.remove(logfile)
+                if bsub:
+                    logfile = '{0}/bsub_zernike_{1}{2}.log'.format(job_directory, piff_name, ['', '_dointerp'][do_interp])
+                    # check file exists, make it
+                    if os.path.exists(logfile) and call:
+                        os.remove(logfile)
 
-                bsub_command = ['bsub',
-                                '-J', job_name,
-                                '-o', logfile]
-                if time > 0:
-                    bsub_command += ['-W', str(time)]
-                if memory > 1:
-                    bsub_command += ['-n', str(memory),]
-                                     # '-R', '"span[ptile={0}]"'.format(memory)]
+                    bsub_command = ['bsub',
+                                    '-J', job_name,
+                                    '-o', logfile]
+                    if time > 0:
+                        bsub_command += ['-W', str(time)]
+                    if memory > 1:
+                        bsub_command += ['-n', str(memory),]
+                                         # '-R', '"span[ptile={0}]"'.format(memory)]
 
-                command = bsub_command + command
+                    command = bsub_command + command
 
-            print(' '.join(command))
-            if call:
-                print(job_name)
-                subprocess.call(command)
+                print(' '.join(command))
+                if call:
+                    print(job_name)
+                    subprocess.call(command)
         raise Exception('Temporarily stopping the zernike after first ap')
 
 if __name__ == '__main__':

@@ -29,6 +29,39 @@ def convert_momentshapes_to_shapes(momentshapes):
     shapes = np.array(shapes)
     return shapes
 
+def load_shapes(fo):
+    # loads shapes, converts columns, and mad cuts
+    shapes = pd.read_hdf(fo)
+
+    # now add shapes to, ahum, shapes
+    T, g1, g2 = convert_momentshapes_to_shapes(shapes[['data_e0', 'data_e1', 'data_e2']].values).T
+    T_model, g1_model, g2_model = convert_momentshapes_to_shapes(shapes[['model_e0', 'model_e1', 'model_e2']].values).T
+    dT = T - T_model
+    dg1 = g1 - g1_model
+    dg2 = g2 - g2_model
+
+    shapes['data_T'] = T
+    shapes['data_g1'] = g1
+    shapes['data_g2'] = g2
+    shapes['model_T'] = T_model
+    shapes['model_g1'] = g1_model
+    shapes['model_g2'] = g2_model
+    shapes['dT'] = dT
+    shapes['dg1'] = dg1
+    shapes['dg2'] = dg2
+
+
+    # nacut
+    shapes.replace([np.inf, -np.inf], np.nan, inplace=True)
+    shapes.dropna(axis=0, inplace=True)
+    # madcut on data outliers
+    mad_cols = ['data_T', 'data_g1', 'data_g2']
+    mad = shapes[mad_cols].sub(shapes[mad_cols].median()).abs()
+    madcut = mad.lt(5 * 1.48 * shapes[mad_cols].mad() + 1e-8)  # add a lil bit for those cases where every value in a column is exactly the same
+    conds = madcut.all(axis=1)
+    cut_shapes = shapes[conds]
+    return cut_shapes, shapes, conds
+
 def self__plot_single(ax, rho, color, marker, offset=0.):
     # Add a single rho stat to the plot.
     meanr = rho.meanr * (1. + rho.bin_size * offset)
@@ -52,7 +85,7 @@ def run_onedhists(files, plotdict):
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
         # load up the dataframe containing the shapes as measured with hsm
-        shapes = pd.read_hdf(fo)
+        shapes, nocut_shapes, conds = load_shapes(fo)
 
         # iterate through plotdict to do the summaries
         for key in plotdict:
@@ -127,6 +160,49 @@ def run_onedhists(files, plotdict):
 
 def run_rho(files, plot_path, uv_coord):
 
+    all_shapes = []
+    for file_indx, fo in enumerate(files):
+        if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
+            print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
+        # load up the dataframe containing the shapes as measured with hsm
+        shapes, nocut_shapes, conds = load_shapes(fo)
+        all_shapes.append(shapes)
+    print('concatenating')
+    shapes = pd.concat(all_shapes, ignore_index=True)
+
+    if uv_coord:
+        u = shapes['u']
+        v = shapes['v']
+    else:
+        ra = shapes['ra']
+        dec = shapes['dec']
+
+    # though we have to convert to regular shapes
+    T, g1, g2 = convert_momentshapes_to_shapes(shapes[['data_e0', 'data_e1', 'data_e2']].values).T
+    T_model, g1_model, g2_model = convert_momentshapes_to_shapes(shapes[['model_e0', 'model_e1', 'model_e2']].values).T
+
+    dT = T - T_model
+    dg1 = g1 - g1_model
+    dg2 = g2 - g2_model
+
+    if uv_coord:
+        cat_kwargs = {'x': u, 'y': v, 'x_units': 'arcsec', 'y_units': 'arcsec'}
+    else:
+        cat_kwargs = {'ra': ra, 'dec': dec, 'ra_units': 'deg', 'dec_units': 'deg'}
+
+    cat_kwargs['g1'] = g1
+    cat_kwargs['g2'] = g2
+    cat_g = treecorr.Catalog(**cat_kwargs)
+
+    cat_kwargs['g1'] = dg1
+    cat_kwargs['g2'] = dg2
+    cat_dg = treecorr.Catalog(**cat_kwargs)
+
+    cat_kwargs['g1'] = g1 * dT / T
+    cat_kwargs['g2'] = g2 * dT / T
+    cat_gdTT = treecorr.Catalog(**cat_kwargs)
+
+    # accumulate corr
     self_tckwargs = {'min_sep': 0.1, 'max_sep': 600, 'bin_size': 0.2, 'sep_units': 'arcmin'}
     self_rho1 = treecorr.GGCorrelation(self_tckwargs)
     self_rho2 = treecorr.GGCorrelation(self_tckwargs)
@@ -134,92 +210,11 @@ def run_rho(files, plot_path, uv_coord):
     self_rho4 = treecorr.GGCorrelation(self_tckwargs)
     self_rho5 = treecorr.GGCorrelation(self_tckwargs)
 
-    varg_g = 0
-    sumw_g = 0
-    varg_dg = 0
-    sumw_dg = 0
-    varg_gdTT = 0
-    sumw_gdTT = 0
-
-    for file_indx, fo in enumerate(files):
-        if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
-            print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
-        # load up the dataframe containing the shapes as measured with hsm
-        shapes = pd.read_hdf(fo)
-
-        if uv_coord:
-            u = shapes['u']
-            v = shapes['v']
-        else:
-            ra = shapes['ra']
-            dec = shapes['dec']
-
-        # though we have to convert to regular shapes
-        T, g1, g2 = convert_momentshapes_to_shapes(shapes[['data_e0', 'data_e1', 'data_e2']].values).T
-        T_model, g1_model, g2_model = convert_momentshapes_to_shapes(shapes[['model_e0', 'model_e1', 'model_e2']].values).T
-
-        # cut any infinites
-        conds = np.isfinite(T) * np.isfinite(g1) * np.isfinite(g2) * np.isfinite(T_model) * np.isfinite(g1_model) * np.isfinite(g2_model)
-        if uv_coord:
-            u = u[conds]
-            v = v[conds]
-        else:
-            ra = ra[conds]
-            dec = dec[conds]
-        T_model = T_model[conds]
-        g1_model = g1_model[conds]
-        g2_model = g2_model[conds]
-        T = T[conds]
-        g1 = g1[conds]
-        g2 = g2[conds]
-
-        dT = T - T_model
-        dg1 = g1 - g1_model
-        dg2 = g2 - g2_model
-
-        if uv_coord:
-            cat_kwargs = {'x': u, 'y': v, 'x_units': 'arcsec', 'y_units': 'arcsec'}
-        else:
-            cat_kwargs = {'ra': ra, 'dec': dec, 'ra_units': 'deg', 'dec_units': 'deg'}
-
-        cat_kwargs['g1'] = g1
-        cat_kwargs['g2'] = g2
-        cat_g = treecorr.Catalog(**cat_kwargs)
-
-        cat_kwargs['g1'] = dg1
-        cat_kwargs['g2'] = dg2
-        cat_dg = treecorr.Catalog(**cat_kwargs)
-
-        cat_kwargs['g1'] = g1 * dT / T
-        cat_kwargs['g2'] = g2 * dT / T
-        cat_gdTT = treecorr.Catalog(**cat_kwargs)
-
-        # accumulate corr
-        self_rho1.process_auto(cat_dg)
-        self_rho2.process_cross(cat_g, cat_dg)
-        self_rho3.process_auto(cat_gdTT)
-        self_rho4.process_cross(cat_dg, cat_gdTT)
-        self_rho5.process_cross(cat_g, cat_gdTT)
-
-        # accumulate var
-        varg_g += cat_g.varg * cat_g.sumw
-        sumw_g += cat_g.sumw
-        varg_dg += cat_dg.varg * cat_dg.sumw
-        sumw_dg += cat_dg.sumw
-        varg_gdTT += cat_gdTT.varg * cat_gdTT.sumw
-        sumw_gdTT += cat_gdTT.sumw
-
-    # finalize var of cats
-    varg_g = varg_g / sumw_g
-    varg_dg = varg_dg / sumw_dg
-    varg_gdTT = varg_gdTT / sumw_gdTT
-
-    # finalize rhos
-    self_rho1.finalize(varg_dg, varg_dg)
-    self_rho2.finalize(varg_g, varg_dg)
-    self_rho3.finalize(varg_gdTT, varg_gdTT)
-    self_rho4.finalize(varg_dg, varg_gdTT)
-    self_rho5.finalize(varg_g, varg_gdTT)
+    self_rho1.process(cat_dg)
+    self_rho2.process(cat_g, cat_dg)
+    self_rho3.process(cat_gdTT)
+    self_rho4.process(cat_dg, cat_gdTT)
+    self_rho5.process(cat_g, cat_gdTT)
 
     # figure
     fig = Figure(figsize = (10,5))
@@ -315,6 +310,15 @@ def run_collect_optics(files, file_out):
         print(e.args)
         print(e)
         raise e
+
+    # load up Aaron's DBase fits
+    ajr_fits_path = '/nfs/slac/g/ki/ki19/des/cpd/piff_test/CtioDB_db-part1.csv'
+    if os.path.exists(ajr_fits_path):
+        ajr = pd.read_csv(ajr_fits_path)
+        fits = pd.merge(fits, ajr, on='expid', how='left')
+    else:
+        print('Could not find Donut fits at {0}!'.format(ajr_fits_path))
+
     print('saving fits to {0}'.format(file_out))
     if os.path.exists(file_out):
         os.remove(file_out)
@@ -342,34 +346,7 @@ def run_twodhists(files, file_out_base, sep=50):
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
         # load up the dataframe containing the shapes as measured with hsm
-        shapes = pd.read_hdf(fo)
-        shapes.drop(['chipnum', 'model_flux', 'data_flux', 'data_sigma_flux', 'snr', ], axis=1, inplace=True)
-
-        # now add shapes to, ahum, shapes
-        T, g1, g2 = convert_momentshapes_to_shapes(shapes[['data_e0', 'data_e1', 'data_e2']].values).T
-        T_model, g1_model, g2_model = convert_momentshapes_to_shapes(shapes[['model_e0', 'model_e1', 'model_e2']].values).T
-        dT = T - T_model
-        dg1 = g1 - g1_model
-        dg2 = g2 - g2_model
-
-        shapes['data_T'] = T
-        shapes['data_g1'] = g1
-        shapes['data_g2'] = g2
-        shapes['model_T'] = T_model
-        shapes['model_g1'] = g1_model
-        shapes['model_g2'] = g2_model
-        shapes['dT'] = dT
-        shapes['dg1'] = dg1
-        shapes['dg2'] = dg2
-
-        # nacut
-        shapes.replace([np.inf, -np.inf], np.nan, inplace=True)
-        shapes.dropna(axis=0, inplace=True)
-        # madcut
-        mad = shapes.sub(shapes.median()).abs()
-        madcut = mad.lt(5 * 1.48 * shapes.mad() + 1e-8)  # add a lil bit for those cases where every value in a column is exactly the same
-        conds = madcut.all(axis=1)
-        shapes = shapes[conds]
+        shapes, nocut_shapes, conds = load_shapes(fo)
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print(len(conds), np.sum(conds))
 
@@ -426,103 +403,6 @@ def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
             C[vi, ui] += value
             C.mask[vi, ui] = 0
 
-def OLD_run_twodhists(files, file_out_base, sep=50):
-    bins_u = np.arange(-3900, 3900 + sep, sep)
-    bins_v = np.arange(-3500, 3500 + sep, sep)
-
-    arrays = {}
-    for file_indx, fo in enumerate(files):
-        if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
-            print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
-        # load up the dataframe containing the shapes as measured with hsm
-        shapes = pd.read_hdf(fo)
-        shapes.drop(['chipnum', 'model_flux', 'data_flux', 'data_sigma_flux', 'snr', ], axis=1, inplace=True)
-
-        # now add shapes to, ahum, shapes
-        T, g1, g2 = convert_momentshapes_to_shapes(shapes[['data_e0', 'data_e1', 'data_e2']].values).T
-        T_model, g1_model, g2_model = convert_momentshapes_to_shapes(shapes[['model_e0', 'model_e1', 'model_e2']].values).T
-        dT = T - T_model
-        dg1 = g1 - g1_model
-        dg2 = g2 - g2_model
-
-        shapes['data_T'] = T
-        shapes['data_g1'] = g1
-        shapes['data_g2'] = g2
-        shapes['model_T'] = T_model
-        shapes['model_g1'] = g1_model
-        shapes['model_g2'] = g2_model
-        shapes['dT'] = dT
-        shapes['dg1'] = dg1
-        shapes['dg2'] = dg2
-
-        # nacut
-        shapes.replace([np.inf, -np.inf], np.nan, inplace=True)
-        shapes.dropna(axis=0, inplace=True)
-        # madcut
-        mad = shapes.sub(shapes.median()).abs()
-        madcut = mad.lt(5 * 1.48 * shapes.mad() + 1e-8)  # add a lil bit for those cases where every value in a column is exactly the same
-        conds = madcut.all(axis=1)
-        shapes = shapes[conds]
-
-        u = shapes['u']
-        v = shapes['v']
-        indx_u = np.digitize(u, bins_u) - 1
-        indx_v = np.digitize(v, bins_v) - 1
-        unique_indx = np.vstack({tuple(row) for row in np.vstack((indx_u, indx_v)).T})
-
-        keys = shapes.columns.tolist()
-        for key in keys:
-            if file_indx == 0:
-                # initialize array
-                C = np.ma.zeros((len(bins_v), len(bins_u)))
-                C.mask = np.ones((len(bins_v), len(bins_u)))
-                arrays[key] = C
-            # accumulate
-            _add_twodhists(shapes[key].values, indx_u, indx_v, unique_indx, arrays[key])
-        # add to number in bin
-        if file_indx == 0:
-            C = np.ma.zeros((len(bins_v), len(bins_u)))
-            C.mask = np.ones((len(bins_v), len(bins_u)))
-            arrays['number_in_bin'] = C
-        _add_twodhists(np.ones(len(indx_u)), indx_u, indx_v, unique_indx, arrays['number_in_bin'])
-
-    # now divide each column by number_in_bin
-    number_in_bin = arrays['number_in_bin']
-    for key in arrays:
-        if key == 'number_in_bin':
-            continue
-        else:
-            arrays[key] /= number_in_bin
-
-    # now make and save the plots from the arrays
-    for key in arrays:
-        fig = Figure(figsize = (12, 9))
-        ax = fig.add_subplot(1,1,1)
-
-        ax.set_xlabel('u')
-        ax.set_ylabel('v')
-        ax.set_title(key)
-
-        C = arrays[key]
-        vmin = np.nanpercentile(C.data[~C.mask], q=2)
-        vmax = np.nanpercentile(C.data[~C.mask], q=92)
-        IM = ax.pcolor(bins_u, bins_v, C, vmin=vmin, vmax=vmax)
-        ax.set_xlim(min(bins_u), max(bins_u))
-        ax.set_ylim(min(bins_v), max(bins_v))
-        fig.colorbar(IM, ax=ax)
-
-        canvas = FigureCanvasAgg(fig)
-        # Do this after we've set the canvas to use Agg to avoid warning.
-        fig.set_tight_layout(True)
-
-        # save the numpy array
-        np.save('{0}_stacked_array_{1}.npy'.format(file_out_base, key), C.data)
-
-        # save files based on what is listed
-        plot_path = '{0}_{1}.pdf'.format(file_out_base, key)
-        print('saving plot to {0}'.format(plot_path))
-        canvas.print_figure(plot_path, dpi=100)
-
 def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=False, skip_oned=False, skip_twod=False):
     if not os.path.exists(out_directory):
         os.makedirs(out_directory)
@@ -535,28 +415,10 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
             file_out = '{0}/fit_parameters_{1}.h5'.format(out_directory, piff_name)
             run_collect_optics(files, file_out)
 
-    # onedhists
-    plotdict = {}
-    for shape_key in ['data_e0', 'de0', 'data_e1', 'de1', 'data_e2', 'de2',
-                      'data_delta1', 'ddelta1', 'data_delta2', 'ddelta2',
-                      'data_zeta1', 'dzeta1', 'data_zeta2', 'dzeta2',
-                      'atmo_size', 'atmo_g1', 'atmo_g2']:
-        plotdict[shape_key] = {'key_x': 'data_flux', 'key_y': shape_key,
-                               'bins_x': np.logspace(3, 7, 501), 'log_x': True}
-    if not skip_oned:
-        for label in ['test', 'train']:
-            files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-            if len(files) > 0:
-                # make plotdict
-                for key in plotdict:
-                    plotdict[key]['plot_path'] = '{0}/onedhists_{1}_{2}_{3}.pdf'.format(out_directory, key, label, piff_name)
-
-                print('computing onedhists stats for {0} for {1} psfs'.format(piff_name, len(files)))
-                run_onedhists(files, plotdict)
-
     if not skip_rho:
         # rho stats
-        for uv_coord in [True, False]:
+        # for uv_coord in [True, False]:
+        for uv_coord in [False]:  # only do RA
             for label in ['test', 'train']:
                 files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
                 if len(files) > 0:
@@ -576,6 +438,24 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
                 print('computing twod stats for {0} for {1} psfs'.format(piff_name, len(files)))
                 file_out_base = '{0}/twodhists_{1}_{2}'.format(out_directory, label, piff_name)
                 run_twodhists(files, file_out_base, sep=sep)
+
+    plotdict = {}
+    for shape_key in ['data_e0', 'de0', 'data_e1', 'de1', 'data_e2', 'de2',
+                      'data_delta1', 'ddelta1', 'data_delta2', 'ddelta2',
+                      'data_zeta1', 'dzeta1', 'data_zeta2', 'dzeta2',
+                      'atmo_size', 'atmo_g1', 'atmo_g2']:
+        plotdict[shape_key] = {'key_x': 'data_flux', 'key_y': shape_key,
+                               'bins_x': np.logspace(3, 7, 501), 'log_x': True}
+    if not skip_oned:
+        for label in ['test', 'train']:
+            files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+            if len(files) > 0:
+                # make plotdict
+                for key in plotdict:
+                    plotdict[key]['plot_path'] = '{0}/onedhists_{1}_{2}_{3}.pdf'.format(out_directory, key, label, piff_name)
+
+                print('computing onedhists stats for {0} for {1} psfs'.format(piff_name, len(files)))
+                run_onedhists(files, plotdict)
 
 if __name__ == '__main__':
     import argparse

@@ -13,7 +13,13 @@ from __future__ import print_function, division
 
 import os
 import glob
+
+from sklearn.neighbors import KNeighborsRegressor
+import fitsio
 import piff
+import pandas as pd
+
+from fit_psf import plot_2dhist_shapes
 
 def meanify_config(files, average_file, meanify_params):
     config = {'output': {'file_name': files},
@@ -54,6 +60,39 @@ def call_meanify(run_config_path, overwrite, n):
 
         config = meanify_config(files, average_file, meanify_params)
         piff.meanify(config, logger=logger)
+
+        # # make plots of meanify
+        # logger.info('Making plots')
+
+        # # load X0 y0
+        # n_neighbors=4
+        # average = fitsio.read(average_file)
+        # X0 = average['COORDS0'][0]
+        # y0 = average['PARAMS0'][0]
+
+        # neigh = KNeighborsRegressor(n_neighbors=n_neighbors)
+        # neigh.fit(X0, y0)
+        # y = neigh.predict(X0)
+        # keys = [['atmo_size', 'atmo_g1', 'atmo_g2']]
+        # shapes = {'u': X0[:, 0], 'v': X0[:, 1],
+        #           'atmo_size': y[:, 0],
+        #           'atmo_g1': y[:, 1], 'atmo_g2': y[:, 2]}
+        # keys_i = []
+        # for i in range(3, len(y[0])):
+        #     key = 'param_{0}'.format(i)
+        #     shapes[key] = y[:, i]
+        #     keys_i.append(key)
+        #     if len(keys_i) == 3:
+        #         keys.append(keys_i)
+        #         keys_i = []
+        # if len(keys_i) > 0:
+        #     keys_i += [keys_i[0]] * (3 - len(keys_i))
+        #     keys.append(keys_i)
+
+        # shapes = pd.DataFrame(shapes)
+
+        # fig, axs = plot_2dhist_shapes(shapes, keys, gridsize=500)
+        # fig.savefig('{0}/meanify_params_{1}.pdf'.format(directory, psf_name))
 
 if __name__ == '__main__':
     import argparse

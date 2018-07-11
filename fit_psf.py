@@ -53,7 +53,7 @@ def load_star_images(stars, config, logger=None):
     loaded_stars = []
     # divide up stars by ccdnum to get the specific file_name
     chipnums = np.array([star.data.properties['chipnum'] for star in stars])
-    for chipnum in np.unique(chipnums):
+    for chipnum in sorted(np.unique(chipnums)):
         ccd_stars = []
         conds = chipnums == chipnum
         for ci, cond in enumerate(conds):
@@ -130,7 +130,7 @@ def plot_2dhist_shapes(shapes, keys, diff_mode=False, **kwargs):
     u = shapes['u']
     v = shapes['v']
 
-    fig, axs = plt.subplots(nrows=len(keys), ncols=3, figsize=(4 * 3, 3 * len(keys)))
+    fig, axs = plt.subplots(nrows=len(keys), ncols=3, figsize=(4 * 3, 3 * len(keys)), squeeze=False)
     # left column gets the Y coordinate label
     for ax in axs:
         ax[0].set_ylabel('v')
@@ -178,14 +178,17 @@ def plot_2dhist_shapes(shapes, keys, diff_mode=False, **kwargs):
                 vmax = None
                 cmap = None
 
-            im = ax.hexbin(u_i, v_i, C=C_i, vmin=vmin, vmax=vmax, cmap=cmap, gridsize=30, reduce_C_function=np.median, **kwargs)
+            kwargs_in = {'gridsize': 30, 'reduce_C_function': np.median,
+                         'vmin': vmin, 'vmax': vmax, 'cmap': cmap}
+            kwargs_in.update(kwargs)
+            im = ax.hexbin(u_i, v_i, C=C_i, **kwargs_in)
             fig.colorbar(im, ax=ax)
             ax.set_title(label)
     plt.tight_layout()
 
     return fig, axs
 
-def fit_psf(directory, config_file_name, print_log, meanify_file_path=''):
+def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_interp_only=False):
     do_meanify = meanify_file_path != ''
     piff_name = config_file_name
     # load config file
@@ -206,19 +209,26 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path=''):
         else:
             logger = piff.setup_logger(verbose=verbose, log_file='{0}/{1}_fit_psf_logger.log'.format(directory, config_file_name))
 
-    if do_meanify and is_optatmo:
+    if (do_meanify or fit_interp_only) and is_optatmo:
         # load base optics psf
         out_path = '{0}/{1}.piff'.format(directory, piff_name)
+        logger.info('Loading saved PSF at {0}'.format(out_path))
         psf = piff.read(out_path)
 
         # load images for train stars
+        logger.info('loading train stars')
         psf.stars = load_star_images(psf.stars, config, logger=logger)
 
         # load test stars and their images
+        logger.info('loading test stars')
         test_stars = read_stars(out_path, logger=logger)
         test_stars = load_star_images(test_stars, config, logger=logger)
 
-    elif do_meanify and not is_optatmo:
+        # make output
+        config['output']['dir'] = directory
+        output = piff.Output.process(config['output'], logger=logger)
+
+    elif (do_meanify or fit_interp_only) and not is_optatmo:
         # welp, not much to do here. shouldn't even have gotten here! :(
         logger.warning('Somehow passed the meanify to a non-optatmo argument. This should not happen.')
         return
@@ -269,16 +279,16 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path=''):
                     logger.warning('Warning! Failed to fit atmosphere model for star {0}. Ignoring star in atmosphere fit'.format(star_i))
             psf.stars = new_stars
 
-    # save psf
-    # make sure the output is in the right directory
-    config['output']['dir'] = directory
-    output = piff.Output.process(config['output'], logger=logger)
-    logger.info('Saving PSF')
-    # save fitted PSF
-    psf.write(output.file_name, logger=logger)
+        # save psf
+        # make sure the output is in the right directory
+        config['output']['dir'] = directory
+        output = piff.Output.process(config['output'], logger=logger)
+        logger.info('Saving PSF')
+        # save fitted PSF
+        psf.write(output.file_name, logger=logger)
 
-    # and write test stars
-    write_stars(test_stars, output.file_name, logger=logger)
+        # and write test stars
+        write_stars(test_stars, output.file_name, logger=logger)
 
     shape_keys = ['e0', 'e1', 'e2', 'delta1', 'delta2', 'zeta1', 'zeta2']
     shape_plot_keys = []
@@ -287,7 +297,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path=''):
     if is_optatmo:
         interps = config.pop('interps')
         interp_keys = interps.keys()
-        if not do_meanify:
+        if not (do_meanify or fit_interp_only):
             # do noatmo only when we do not have meanify
             interp_keys = ['noatmo'] + interp_keys
         for interp_key in interp_keys:
@@ -316,11 +326,14 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path=''):
 
             for stars, label in zip([psf.stars, test_stars], ['train', 'test']):
                 # get shapes
-                logger.debug('drawing model stars')
+                logger.debug('drawing {0} model stars'.format(label))
                 model_stars = psf.drawStarList(stars)
                 shapes = measure_star_shape(stars, model_stars, logger=logger)
 
-                param_keys = ['atmo_size', 'atmo_g1', 'atmo_g2'] + ['optics_size', 'optics_g1', 'optics_g2'] + ['z{0:02d}'.format(zi) for zi in range(4, 45)]
+                param_keys = ['atmo_size', 'atmo_g1', 'atmo_g2']
+                if psf.atmosphere_model == 'vonkarman':
+                    param_keys += ['atmo_L0']
+                param_keys += ['optics_size', 'optics_g1', 'optics_g2'] + ['z{0:02d}'.format(zi) for zi in range(4, 45)]
                 if label == 'train':
                     # if train, plot fitted params
                     logger.info('Extracting training fit parameters')
@@ -414,6 +427,8 @@ if __name__ == '__main__':
                         help='directory of the run. Default to current directory')
     parser.add_argument('--print_log', action='store_true', dest='print_log',
                         help='print logging instead of save')
+    parser.add_argument('--fit_interp_only', action='store_true', dest='fit_interp_only',
+                        help='load up piff file and stars and only do the fit_interp portion')
     parser.add_argument('--config_file_name', action='store', dest='config_file_name',
                         help='name of the config file (without .yaml)')
     parser.add_argument('--meanify_file_path', action='store', dest='meanify_file_path',
