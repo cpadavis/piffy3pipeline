@@ -170,6 +170,7 @@ def run_rho(files, plot_path, uv_coord):
     print('concatenating')
     shapes = pd.concat(all_shapes, ignore_index=True)
 
+    print('doing shapes')
     if uv_coord:
         u = shapes['u']
         v = shapes['v']
@@ -190,6 +191,7 @@ def run_rho(files, plot_path, uv_coord):
     else:
         cat_kwargs = {'ra': ra, 'dec': dec, 'ra_units': 'deg', 'dec_units': 'deg'}
 
+    print('doing catalogs')
     cat_kwargs['g1'] = g1
     cat_kwargs['g2'] = g2
     cat_g = treecorr.Catalog(**cat_kwargs)
@@ -210,12 +212,14 @@ def run_rho(files, plot_path, uv_coord):
     self_rho4 = treecorr.GGCorrelation(self_tckwargs)
     self_rho5 = treecorr.GGCorrelation(self_tckwargs)
 
+    print('accumulating')
     self_rho1.process(cat_dg)
     self_rho2.process(cat_g, cat_dg)
     self_rho3.process(cat_gdTT)
     self_rho4.process(cat_dg, cat_gdTT)
     self_rho5.process(cat_g, cat_gdTT)
 
+    print('make figure')
     # figure
     fig = Figure(figsize = (10,5))
     # In matplotlib 2.0, this will be
@@ -361,8 +365,6 @@ def run_twodhists(files, file_out_base, sep=50):
     agg = arrays.groupby((indx_u, indx_v)).agg(np.median)
 
     # save
-    print('saving stars')
-    arrays.to_hdf('{0}_stars.h5'.format(file_out_base), 'stars')
     print('saving agg')
     agg.to_hdf('{0}_agg.h5'.format(file_out_base), 'agg')
 
@@ -393,6 +395,9 @@ def run_twodhists(files, file_out_base, sep=50):
         print('saving plot to {0}'.format(plot_path))
         canvas.print_figure(plot_path, dpi=100)
 
+    print('saving stars')
+    arrays.to_hdf('{0}_stars.h5'.format(file_out_base), 'stars')
+
 def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
     for unique in unique_indx:
         ui, vi = unique
@@ -417,8 +422,10 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 
     if not skip_rho:
         # rho stats
-        # for uv_coord in [True, False]:
-        for uv_coord in [False]:  # only do RA
+        # for uv_coord in [False]:  # only do RA
+        # for uv_coord in [True]:
+        for uv_coord in [True, False]:
+            # for label in ['test']:
             for label in ['test', 'train']:
                 files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
                 if len(files) > 0:

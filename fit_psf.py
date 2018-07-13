@@ -299,7 +299,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         interp_keys = interps.keys()
         if not (do_meanify or fit_interp_only):
             # do noatmo only when we do not have meanify
-            interp_keys = ['noatmo'] + interp_keys
+            interp_keys = interp_keys + ['noatmo']
         for interp_key in interp_keys:
             piff_name = '{0}_{1}'.format(config_file_name, interp_key)
             logger.info('Fitting optatmo interpolate for {0}'.format(interp_key))

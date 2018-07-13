@@ -61,6 +61,9 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             # and I also messed up the ccd splitting
             config['input']['wcs']['ccdnum']['str'] = "image_file_name.split('_')[-1].split('.fits')[0]"
 
+            if print_log:
+                config['verbose'] = 3
+
             # code to make job_directory and name
             job_directory = '{0}/{1:08d}'.format(directory, expid)
             job_name = 'fit_psf__expid_{0:08d}__{1}'.format(expid, psf_name)

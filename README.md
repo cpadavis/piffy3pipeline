@@ -30,7 +30,34 @@ This directory has the set of scripts and configs to produce the y3 psf runs.
 
 You also can collect fits to the zernike parameters of individual stars via call_zernike.py
 
+# another example run:
+
+    you'll make some config pfl_config.yaml
+
+    # test that your config works -- will run only one expid, and will print logger output to screen
+    python call_fit_psf.py --call --print_log -n 1 pfl_config.yaml
+
+    # submit it all to the batch farm >:)
+    python call_fit_psf.py --call --bsub pfl_config.yaml
+
+    # drink coffee, probably eat a meal and sleep
+
+    # meanify the psfs
+    python call_meanify.py pfl_config.yaml
+
+    # if you mess with your meanify params, overwrite this way:
+    python call_meanify.py --overwrite pfl_config.yaml
+
+    # rerun the meanify fit_psf
+    python call_fit_psf.py --call --bsub --meanify pfl_config.yaml
+
+    # you didn'jt like your interp settings, so rerun the interps
+    python call_fit_psf.py --call --bsub --meanify --fit_interp_only --overwrite pfl_config.yaml
+
+    # collect and summarize the PSFs
+    python call_collect.py --call --bsub pfl_config.yaml
+
+
 # TODO
 
-    - The code is getting tripped up on whether I mean to use the name of a file, or its name and extension, or the full path. I should be able to run this code anywhere, not just in the y3pipeline.
     - now that I have a successful run under my belt, I need to check the memory and time use to put something more sane in
