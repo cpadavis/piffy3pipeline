@@ -35,6 +35,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
 
     nrun = 0
     for expid in expids:
+	exposure = str(expid)
         for psf_file in psf_files:
             psf_name = psf_file.split('.yaml')[0].split('/')[-1]
             if meanify:
@@ -61,6 +62,24 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             # and I also messed up the ccd splitting
             config['input']['wcs']['ccdnum']['str'] = "image_file_name.split('_')[-1].split('.fits')[0]"
 
+	    band_test_file = "{0}/{1}/psf_cat_{1}_1.fits".format(psf_dir, exposure)
+	    hdu = fits.open(band_test_file)
+    	    filter_name = hdu[3].data['band'][0]
+	    if config['psf']['type'] == 'OptAtmo':
+           	# look up band information
+
+	        # modify config band information
+		if filter_name = "g":
+	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+		if filter_name = "r":
+	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+		if filter_name = "i":
+	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+		if filter_name = "z":
+	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+		if filter_name = "Y":
+	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+
             if print_log:
                 config['verbose'] = 3
 
@@ -79,6 +98,8 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                        'fit_psf.py',
                        '--directory', job_directory,
                        '--config_file_name', psf_name,
+                       '--exposure', exposure,
+                       '--core_directory', directory,
                        ]
             if print_log:
                 command = command + ['--print_log']
