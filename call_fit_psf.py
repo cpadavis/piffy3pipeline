@@ -69,16 +69,18 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
            	# look up band information
 
 	        # modify config band information
+		if filter_name = "u":
+	            config['psf']['optical_psf_kwargs']['lam'] = 387.6
 		if filter_name = "g":
-	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+	            config['psf']['optical_psf_kwargs']['lam'] = 484.2
 		if filter_name = "r":
-	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+	            config['psf']['optical_psf_kwargs']['lam'] = 643.9
 		if filter_name = "i":
-	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+	            config['psf']['optical_psf_kwargs']['lam'] = 782.1
 		if filter_name = "z":
-	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+	            config['psf']['optical_psf_kwargs']['lam'] = 917.2
 		if filter_name = "Y":
-	            config['psf']['optical_psf_kwargs']['lam'] = 1235
+	            config['psf']['optical_psf_kwargs']['lam'] = 987.8
 
             if print_log:
                 config['verbose'] = 3
