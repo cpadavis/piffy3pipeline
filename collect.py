@@ -326,7 +326,7 @@ def run_collect_optics(files, file_out):
     print('saving fits to {0}'.format(file_out))
     if os.path.exists(file_out):
         os.remove(file_out)
-    fits.to_hdf(file_out, 'data')
+    fits.to_hdf(file_out, 'data', mode='w')
 
 def agg_to_array(agg, key, bins_x, bins_y):
     indx_x_transform = agg.index.labels[0].values()
@@ -366,7 +366,7 @@ def run_twodhists(files, file_out_base, sep=50):
 
     # save
     print('saving agg')
-    agg.to_hdf('{0}_agg.h5'.format(file_out_base), 'agg')
+    agg.to_hdf('{0}_agg.h5'.format(file_out_base), 'agg', mode='w')
 
     # make figures
     for key in arrays:
@@ -396,7 +396,7 @@ def run_twodhists(files, file_out_base, sep=50):
         canvas.print_figure(plot_path, dpi=100)
 
     print('saving stars')
-    arrays.to_hdf('{0}_stars.h5'.format(file_out_base), 'stars')
+    arrays.to_hdf('{0}_stars.h5'.format(file_out_base), 'stars', mode='w')
 
 def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
     for unique in unique_indx:
