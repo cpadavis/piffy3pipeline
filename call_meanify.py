@@ -18,6 +18,7 @@ from sklearn.neighbors import KNeighborsRegressor
 import fitsio
 import piff
 import pandas as pd
+import numpy as np
 
 from fit_psf import plot_2dhist_shapes
 
@@ -32,6 +33,11 @@ def meanify_config(files, average_file, meanify_params):
 
 def call_meanify(run_config_path, overwrite, n):
 
+    core_directory = os.path.realpath(__file__)
+    program_name = core_directory.split("/")[-1]
+    core_directory = core_directory.split("/{0}".format(program_name))[0]
+    source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
+
     logger = piff.setup_logger(verbose=3, log_file='meanify.log')
 
     run_config = piff.read_config(run_config_path)
@@ -42,7 +48,7 @@ def call_meanify(run_config_path, overwrite, n):
     for psf_file in psf_files:
         logger.info('PSF File {0}'.format(psf_file))
         psf_name = psf_file.split('.yaml')[0].split('/')[-1]
-        average_file = '{0}/meanify_{1}.fits'.format(directory, psf_name)
+        average_file = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, band)
 
         if os.path.exists(average_file):
             if overwrite:
@@ -53,7 +59,29 @@ def call_meanify(run_config_path, overwrite, n):
 
         # glob over expids
         logger.info('Globbing')
-        files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
+	if band=="all":
+            files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
+	else:
+            original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
+	    files = []
+	    for original_file in original_files:
+		exposure = original_file.split("/")[-2][2:]
+	        skip=False
+	        for index in range(1,63):
+		    try:
+		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+	        	hdu = fits.open(band_test_file)
+		        break
+		    except:
+		        if index==62:
+			    skip = True
+		        else:
+		            pass
+	        if skip==True:
+		    continue
+    		filter_name = hdu[3].data['band'][0]
+    		if filter_name==band:
+        	    files.append(original_files)
         if n > 0:
             files = files[:n]
         logger.info('Meanifying')
@@ -102,8 +130,9 @@ if __name__ == '__main__':
     parser.add_argument('-n', action='store', dest='n', type=int, default=0, help='Number of fits to meanify')
     parser.add_argument(action='store', dest='run_config_path',
                         help='Run config to load up and do')
-
+    parser.add_argument('--band')
     options = parser.parse_args()
+    band = options.band
     kwargs = vars(options)
-
+    del kwargs['band']
     call_meanify(**kwargs)

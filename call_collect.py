@@ -66,6 +66,7 @@ def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_t
                    '--directory', directory,
                    '--out_directory', out_directory,
                    '--piff_name', piff_name,
+                   '--band', band,
                    ]
         if do_optatmo and not skip_params:
             command += ['--do_optatmo']
@@ -127,8 +128,9 @@ if __name__ == '__main__':
     parser.add_argument('--skip_oned', action='store_true', dest='skip_oned')
     parser.add_argument('--skip_twod', action='store_true', dest='skip_twod')
     parser.add_argument('--skip_params', action='store_true', dest='skip_params')
-
+    parser.add_argument('--band')
     options = parser.parse_args()
+    band = options.band
     kwargs = vars(options)
-
+    del kwargs['band']
     call_collect(**kwargs)

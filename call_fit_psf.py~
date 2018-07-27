@@ -8,8 +8,6 @@ import subprocess
 import os
 import glob
 import yaml
-from astropy.io import fits
-import numpy as np
 
 import piff
 
@@ -38,31 +36,10 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
     nrun = 0
     for expid in expids:
 	exposure = str(expid)
-	if band=="all":
-	    pass
-	else:
-	    skip=False
-	    for index in range(1,63):
-		try:
-		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
-	    	    hdu = fits.open(band_test_directory)
-		    break
-		except:
-		    if index==62:
-			skip = True
-		    else:
-		        pass
-	    if skip==True:
-		continue
-    	    filter_name = hdu[3].data['band'][0]
-    	    if filter_name==band:
-                pass
-	    else:
-		continue
         for psf_file in psf_files:
             psf_name = psf_file.split('.yaml')[0].split('/')[-1]
             if meanify:
-                meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, band)
+                meanify_file_path = '{0}/meanify_{1}.fits'.format(directory, psf_name)
                 if not os.path.exists(meanify_file_path):
                     continue
 
@@ -84,35 +61,25 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             config['input']['wcs']['exp'] = expid
             # and I also messed up the ccd splitting
             config['input']['wcs']['ccdnum']['str'] = "image_file_name.split('_')[-1].split('.fits')[0]"
-	    skip=False
-	    for index in range(1,63):
-		try:
-		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
-	    	    hdu = fits.open(band_test_file)
-		    break
-		except:
-		    if index==62:
-			skip = True
-		    else:
-		        pass
-	    if skip==True:
-		break
+
+	    band_test_file = "{0}/{1}/psf_cat_{1}_1.fits".format(psf_dir, exposure)
+	    hdu = fits.open(band_test_file)
     	    filter_name = hdu[3].data['band'][0]
 	    if config['psf']['type'] == 'OptAtmo':
            	# look up band information
 
 	        # modify config band information
-		if filter_name == "u":
+		if filter_name = "g":
 	            config['psf']['optical_psf_kwargs']['lam'] = 387.6
-		if filter_name == "g":
+		if filter_name = "g":
 	            config['psf']['optical_psf_kwargs']['lam'] = 484.2
-		if filter_name == "r":
+		if filter_name = "r":
 	            config['psf']['optical_psf_kwargs']['lam'] = 643.9
-		if filter_name == "i":
+		if filter_name = "i":
 	            config['psf']['optical_psf_kwargs']['lam'] = 782.1
-		if filter_name == "z":
+		if filter_name = "z":
 	            config['psf']['optical_psf_kwargs']['lam'] = 917.2
-		if filter_name == "Y":
+		if filter_name = "Y":
 	            config['psf']['optical_psf_kwargs']['lam'] = 987.8
 
             if print_log:
@@ -127,14 +94,14 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 os.makedirs(job_directory)
             save_config(config, job_directory + '/{0}.yaml'.format(psf_name))
 
-	    source_directory = psf_dir
-	    np.save("{0}/source_directory_name.npy".format(directory), np.array([source_directory]))
             # create command
             command = [
                        'python',
                        'fit_psf.py',
                        '--directory', job_directory,
-                       '--config_file_name', psf_name,                    
+                       '--config_file_name', psf_name,
+                       '--exposure', exposure,
+                       '--core_directory', directory,
                        ]
             if print_log:
                 command = command + ['--print_log']
@@ -230,10 +197,8 @@ if __name__ == '__main__':
     parser.add_argument(action='store', dest='run_config_path',
                         default='config.yaml',
                         help='Run config to load up and do')
-    parser.add_argument('--band')
+
     options = parser.parse_args()
-    band = options.band
     kwargs = vars(options)
-    del kwargs['band']
-    print("hello")
+
     call_fit_psf(**kwargs)

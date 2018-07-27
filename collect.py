@@ -1,8 +1,6 @@
 """
 Collect fit parameters and plot their values
-
 Calculate stats over full set of stars
-
 Mostly just copied form stats rho stats
 """
 from __future__ import print_function, division
@@ -411,10 +409,38 @@ def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
 def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=False, skip_oned=False, skip_twod=False):
     if not os.path.exists(out_directory):
         os.makedirs(out_directory)
+    if band=="all":
+	pass
+    else:
+	out_directory = out_directory + "/filter_{0}".format(band)
+	os.system("mkdir {0}".format(out_directory))
 
     # params
     if do_optatmo:
-        files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+        original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+	if band=="all":
+            files = original_files
+	else:
+            original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
+	    files = []
+	    for original_file in original_files:
+		exposure = original_file.split("/")[-2][2:]
+	        skip=False
+	        for index in range(1,63):
+		    try:
+		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+	        	hdu = fits.open(band_test_file)
+		        break
+		    except:
+		        if index==62:
+			    skip = True
+		        else:
+		            pass
+	        if skip==True:
+		    continue
+    		filter_name = hdu[3].data['band'][0]
+    		if filter_name==band:
+        	    files.append(original_files)
         if len(files) > 0:
             print('collecting optatmo params for {0} for {1} psfs'.format(piff_name, len(files)))
             file_out = '{0}/fit_parameters_{1}.h5'.format(out_directory, piff_name)
@@ -427,7 +453,30 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
         for uv_coord in [True, False]:
             # for label in ['test']:
             for label in ['test', 'train']:
-                files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+		if band=="all":
+		    files = original_files
+		else:
+		    original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+		    files = []
+		    for original_file in original_files:
+			exposure = original_file.split("/")[-2][2:]
+			skip=False
+			for index in range(1,63):
+			    try:
+				band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+				hdu = fits.open(band_test_file)
+				break
+			    except:
+				if index==62:
+				    skip = True
+				else:
+				    pass
+			if skip==True:
+			    continue
+			filter_name = hdu[3].data['band'][0]
+			if filter_name==band:
+			    files.append(original_files)
                 if len(files) > 0:
                     print('computing rho stats for {0} for {1} psfs'.format(piff_name, len(files)))
                     if uv_coord:
@@ -440,7 +489,30 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
     if not skip_twod:
         # twod hists
         for label, sep in zip(['test', 'train'], [30, 15]):
-            files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+            original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+	    if band=="all":
+                files = original_files
+	    else:
+                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+	        files = []
+	        for original_file in original_files:
+		    exposure = original_file.split("/")[-2][2:]
+	            skip=False
+	            for index in range(1,63):
+		        try:
+		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+	        	    hdu = fits.open(band_test_file)
+		            break
+		        except:
+		            if index==62:
+			        skip = True
+		            else:
+		                pass
+	            if skip==True:
+		        continue
+    		    filter_name = hdu[3].data['band'][0]
+    		    if filter_name==band:
+        	        files.append(original_files)
             if len(files) > 0:
                 print('computing twod stats for {0} for {1} psfs'.format(piff_name, len(files)))
                 file_out_base = '{0}/twodhists_{1}_{2}'.format(out_directory, label, piff_name)
@@ -453,9 +525,69 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
                       'atmo_size', 'atmo_g1', 'atmo_g2']:
         plotdict[shape_key] = {'key_x': 'data_flux', 'key_y': shape_key,
                                'bins_x': np.logspace(3, 7, 501), 'log_x': True}
+
     if not skip_oned:
         for label in ['test', 'train']:
-            files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+            original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+	    if band=="all":
+                files = original_files
+	    else:
+                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+	        files = []
+	        for original_file in original_files:
+		    exposure = original_file.split("/")[-2][2:]
+	            skip=False
+	            for index in range(1,63):
+		        try:
+		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+	        	    hdu = fits.open(band_test_file)
+		            break
+		        except:
+		            if index==62:
+			        skip = True
+		            else:
+		                pass
+	            if skip==True:
+		        continue
+    		    filter_name = hdu[3].data['band'][0]
+    		    if filter_name==band:
+        	        files.append(original_files)
+                if len(files) > 0:
+                    print('computing rho stats for {0} for {1} psfs'.format(piff_name, len(files)))
+                    if uv_coord:
+                        file_out = '{0}/rhouv_{1}_{2}.pdf'.format(out_directory, label, piff_name)
+
+                    else:
+                        file_out = '{0}/rhora_{1}_{2}.pdf'.format(out_directory, label, piff_name)
+                    run_rho(files, file_out, uv_coord)
+
+    if not skip_twod:
+        # twod hists
+        for label, sep in zip(['test', 'train'], [30, 15]):
+            original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+	    if band=="all":
+                files = original_files
+	    else:
+                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+	        files = []
+	        for original_file in original_files:
+		    exposure = original_file.split("/")[-2][2:]
+	            skip=False
+	            for index in range(1,63):
+		        try:
+		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+	        	    hdu = fits.open(band_test_file)
+		            break
+		        except:
+		            if index==62:
+			        skip = True
+		            else:
+		                pass
+	            if skip==True:
+		        continue
+    		    filter_name = hdu[3].data['band'][0]
+    		    if filter_name==band:
+        	        files.append(original_files)
             if len(files) > 0:
                 # make plotdict
                 for key in plotdict:
@@ -478,8 +610,9 @@ if __name__ == '__main__':
     parser.add_argument('--skip_rho', action='store_true', dest='skip_rho')
     parser.add_argument('--skip_oned', action='store_true', dest='skip_oned')
     parser.add_argument('--skip_twod', action='store_true', dest='skip_twod')
-
+    parser.add_argument('--band')
     options = parser.parse_args()
+    band = options.band
     kwargs = vars(options)
-
+    del kwargs['band']
     collect(**kwargs)

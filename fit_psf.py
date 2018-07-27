@@ -424,6 +424,12 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 file_name = '{0}/{1}_{2}_{3}'.format(directory, label, piff_name, os.path.split(stat.file_name)[1])
                 stat.write(file_name=file_name, logger=logger)
 
+    stars_test = copy.deepcopy(test_stars)
+    stars_train = copy.deepcopy(psf.stars)
+
+    np.save("{0}/stars_test.npy".format(directory),np.array(stars_test))
+    np.save("{0}/stars_train.npy".format(directory),np.array(stars_train))
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
