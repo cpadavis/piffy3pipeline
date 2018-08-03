@@ -225,7 +225,7 @@ if __name__ == '__main__':
     parser.add_argument('--meanify', action='store_true', dest='meanify',
                         help='look for meanify outputs and do those')
     parser.add_argument('--fit_interp_only', action='store_true', dest='fit_interp_only',
-                        help='if a PSF file exists, load it up')
+                        help='if a PSF file exists, load it up and fit the interpolant. Does not need overwrite in order to, um, overwrite')
     parser.add_argument('-n', action='store', dest='nmax', type=int, default=0, help='Number of fits to run')
     parser.add_argument(action='store', dest='run_config_path',
                         default='config.yaml',

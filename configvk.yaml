@@ -1,4 +1,4 @@
-run_name: pipeline_v2_y3v29
+run_name: pipeline_v2_y3v29_vonkarman
 
 psf_dir: /nfs/slac/g/ki/ki19/des/cpd/y3_piff/exposures_v29_grizY
 # output base directory
@@ -6,11 +6,14 @@ directory: /nfs/slac/g/ki/ki19/des/cpd/piff_test/y3pipeline
 
 # what psfs will be run
 psf_optics_files:
-    - psf_optatmo.yaml
+    - psf_optatmovk.yaml
 
 psf_other_files:
-    - psf_pixelgrid.yaml
+    []
 
 meanify:
     hyper:
         bin_spacing: 30  # arcsec
+        max_snr: 0
+        max_chisq: 1.5
+        max_sigma: 5

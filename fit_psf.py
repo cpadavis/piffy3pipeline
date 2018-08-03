@@ -17,7 +17,39 @@ import piff
 
 from piff.util import hsm_error, hsm_higher_order, measure_snr
 
-def fit_interp(stars, config_interp, psf, logger):
+def fit_interp(stars, test_stars, config_interp, psf, chicut=0, madcut=0, snrcut=0, logger=None):
+    if chicut:
+        new_stars = []
+        for star in stars:
+            chi2 = star.fit.chisq
+            dof = star.image.array.size - (len(star.fit.params) + 3)
+            if chi2 / dof < chicut:
+                new_stars.append(star)
+        stars = new_stars
+    if madcut:
+        # get mad of fit params
+        params = np.array([star.fit.params for star in stars])
+        med = np.median(params, axis=0)
+        mad = np.median(np.abs(params - med[None]), axis=0) + 1e-8  # 1e-8 for any params that are constant
+        new_stars = []
+        for star in stars:
+            mad_i = np.abs(star.fit.params - med)
+            if np.all(mad_i < 1.5 * madcut * mad):  # convert mad to outlier
+                new_stars.append(star)
+        stars = new_stars
+    if snrcut:
+        new_stars = []
+        for star in stars:
+            if star.data.properties['snr'] < snrcut:
+                new_stars.append(star)
+        stars = new_stars
+
+        # test stars also undergo snr cut
+        new_stars = []
+        for star in test_stars:
+            if star.data.properties['snr'] < snrcut:
+                new_stars.append(star)
+        test_stars = new_stars
     # init interp
     atmo_interp = piff.Interp.process(copy.deepcopy(config_interp), logger=logger)
     logger.debug("Stripping star fit params down to just atmosphere params for fitting with the atmo_interp")
@@ -35,6 +67,8 @@ def fit_interp(stars, config_interp, psf, logger):
     logger.debug('removing outliers from psf, if present')
     psf.outliers = None
     psf.kwargs['outliers'] = 0
+
+    return stars, test_stars
 
 def write_stars(stars, file_name, extname='psf_test_stars', logger=None):
     fits = fitsio.FITS(file_name, mode='rw')
@@ -307,13 +341,15 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         interp_keys = interps.keys()
         if not (do_meanify or fit_interp_only):
             # do noatmo only when we do not have meanify
-            interp_keys = interp_keys + ['noatmo']
+            interp_keys = ['noatmo'] + interp_keys
+        train_stars = psf.stars
         for interp_key in interp_keys:
             piff_name = '{0}_{1}'.format(config_file_name, interp_key)
             logger.info('Fitting optatmo interpolate for {0}'.format(interp_key))
             if interp_key == 'noatmo':
                 psf.atmo_interp = None
                 psf._enable_atmosphere = False
+                passed_test_stars = test_stars
             else:
                 # fit interps
                 config_interp = interps[interp_key]
@@ -322,17 +358,24 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     config_interp['average_fits'] = meanify_file_path
                     piff_name += '_meanified'
 
-                fit_interp(psf.stars, config_interp, psf, logger)
+                # extract chicut, madcut, snrcut from interp config, if provided
+                interp_chicut = config_interp.pop('chicut', 0)
+                interp_madcut = config_interp.pop('madcut', 0)
+                interp_snrcut = config_interp.pop('snrcut', 0)
+
+                # test stars undergo snr cut, but no other cuts
+                used_interp_stars, passed_test_stars = fit_interp(train_stars, test_stars, config_interp, psf, interp_chicut, interp_madcut, interp_snrcut, logger)
+                psf.stars = used_interp_stars
 
             # save
             out_path = '{0}/{1}.piff'.format(directory, piff_name)
             psf.write(out_path, logger=logger)
-            write_stars(test_stars, out_path, logger=logger)
+            write_stars(passed_test_stars, out_path, logger=logger)
 
             # evaluate
             logger.info('Evaluating {0}'.format(piff_name))
 
-            for stars, label in zip([psf.stars, test_stars], ['train', 'test']):
+            for stars, label in zip([psf.stars, passed_test_stars], ['train', 'test']):
                 # get shapes
                 logger.debug('drawing {0} model stars'.format(label))
                 model_stars = psf.drawStarList(stars)
@@ -363,7 +406,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                         shapes[param_keys[i]] = params[:, i]
 
                 # save shapes
-                shapes.to_hdf('{0}/shapes_{1}_{2}.h5'.format(directory, label, piff_name), 'data')
+                shapes.to_hdf('{0}/shapes_{1}_{2}.h5'.format(directory, label, piff_name), 'data', mode='w')
 
                 # plot shapes
                 fig, axs = plot_2dhist_shapes(shapes, shape_plot_keys, diff_mode=True)
@@ -415,7 +458,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 	    model_stars = psf.drawStarList(stars)
             shapes = measure_star_shape(stars, model_stars, logger=logger)
             # save shapes
-            shapes.to_hdf('{0}/shapes_{1}_{2}.h5'.format(directory, label, piff_name), 'data')
+            shapes.to_hdf('{0}/shapes_{1}_{2}.h5'.format(directory, label, piff_name), 'data', mode='w')
 
             # plot shapes
             fig, axs = plot_2dhist_shapes(shapes, shape_plot_keys, diff_mode=True)

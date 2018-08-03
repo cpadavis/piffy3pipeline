@@ -39,7 +39,7 @@ def call_meanify(run_config_path, overwrite, n):
     core_directory = core_directory.split("/{0}".format(program_name))[0]
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
 
-    logger = piff.setup_logger(verbose=3, log_file='meanify.log')
+    logger = piff.setup_logger(verbose=2, )#log_file='meanify.log')
 
     run_config = piff.read_config(run_config_path)
     psf_files = run_config['psf_optics_files']
@@ -120,7 +120,7 @@ def call_meanify(run_config_path, overwrite, n):
 
         # shapes = pd.DataFrame(shapes)
 
-        # fig, axs = plot_2dhist_shapes(shapes, keys, gridsize=500)
+        # fig, axs = plot_2dhist_shapes(shapes, keys, gridsize=200)
         # fig.savefig('{0}/meanify_params_{1}.pdf'.format(directory, psf_name))
 
 if __name__ == '__main__':

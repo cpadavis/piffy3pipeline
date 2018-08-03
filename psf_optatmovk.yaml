@@ -142,9 +142,24 @@ memory: 2
 test_fraction: 0.2 # save 20 percent
 
 interps:
-    gpvonkarman:
-        type: GPInterp2pcf
-        kernel: 1e-2 * VonKarman(100, (1e-8, 1e5))
     const_gpvonkarman:
         type: GPInterp2pcf
         kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))
+    madcut_const_gpvonkarman:
+        type: GPInterp2pcf
+        kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))
+        madcut: 5
+    chicut_const_gpvonkarman:
+        type: GPInterp2pcf
+        kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))
+        chicut: 2
+    snrcut_const_gpvonkarman:
+        type: GPInterp2pcf
+        kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))
+        snrcut: 95
+    allcut_const_gpvonkarman:
+        type: GPInterp2pcf
+        kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))
+        snrcut: 95
+        chicut: 2
+        madcut: 5
