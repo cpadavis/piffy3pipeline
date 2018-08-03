@@ -45,7 +45,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
 	    for index in range(1,63):
 		try:
 		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
-	    	    hdu = fits.open(band_test_directory)
+	    	    hdu = fits.open(band_test_file)
 		    break
 		except:
 		    if index==62:

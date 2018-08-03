@@ -69,6 +69,10 @@ def load_star_images(stars, config, logger=None):
         ccd_loaded_stars = piff.Star.load_images(ccd_stars, file_name, image_hdu=inconfig['image_hdu'], weight_hdu=inconfig['weight_hdu'], badpix_hdu=inconfig['badpix_hdu'], logger=logger)
         loaded_stars += ccd_loaded_stars
 
+    for loaded_star_i, loaded_star in enumerate(loaded_stars):
+	measured_snr = measure_snr(loaded_star)
+	loaded_star.data.weight = loaded_star.data.weight * (loaded_star.data.properties['snr'] / measured_snr) ** 2
+
     return loaded_stars
 
 def measure_star_shape(stars, model_stars, logger=None):

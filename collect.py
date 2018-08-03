@@ -8,6 +8,7 @@ import glob
 import galsim
 import treecorr
 import numpy as np
+from astropy.io import fits
 import os
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -163,7 +164,13 @@ def run_rho(files, plot_path, uv_coord):
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
         # load up the dataframe containing the shapes as measured with hsm
-        shapes, nocut_shapes, conds = load_shapes(fo)
+	shapes, nocut_shapes, conds = load_shapes(fo)
+	#try:
+        #    shapes, nocut_shapes, conds = load_shapes(fo)
+	#except:
+	#    print("failure to generate rho statistics for a particular exposure!")
+	#    print("fo: {0}".format(fo))
+	#    continue
         all_shapes.append(shapes)
     print('concatenating')
     shapes = pd.concat(all_shapes, ignore_index=True)
@@ -440,7 +447,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		    continue
     		filter_name = hdu[3].data['band'][0]
     		if filter_name==band:
-        	    files.append(original_files)
+        	    files.append(original_file)
         if len(files) > 0:
             print('collecting optatmo params for {0} for {1} psfs'.format(piff_name, len(files)))
             file_out = '{0}/fit_parameters_{1}.h5'.format(out_directory, piff_name)
@@ -476,7 +483,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 			    continue
 			filter_name = hdu[3].data['band'][0]
 			if filter_name==band:
-			    files.append(original_files)
+			    files.append(original_file)
                 if len(files) > 0:
                     print('computing rho stats for {0} for {1} psfs'.format(piff_name, len(files)))
                     if uv_coord:
@@ -512,7 +519,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		        continue
     		    filter_name = hdu[3].data['band'][0]
     		    if filter_name==band:
-        	        files.append(original_files)
+        	        files.append(original_file)
             if len(files) > 0:
                 print('computing twod stats for {0} for {1} psfs'.format(piff_name, len(files)))
                 file_out_base = '{0}/twodhists_{1}_{2}'.format(out_directory, label, piff_name)
@@ -551,7 +558,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		        continue
     		    filter_name = hdu[3].data['band'][0]
     		    if filter_name==band:
-        	        files.append(original_files)
+        	        files.append(original_file)
                 if len(files) > 0:
                     print('computing rho stats for {0} for {1} psfs'.format(piff_name, len(files)))
                     if uv_coord:
@@ -587,7 +594,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		        continue
     		    filter_name = hdu[3].data['band'][0]
     		    if filter_name==band:
-        	        files.append(original_files)
+        	        files.append(original_file)
             if len(files) > 0:
                 # make plotdict
                 for key in plotdict:

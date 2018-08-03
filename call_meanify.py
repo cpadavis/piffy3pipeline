@@ -19,6 +19,7 @@ import fitsio
 import piff
 import pandas as pd
 import numpy as np
+from astropy.io import fits
 
 from fit_psf import plot_2dhist_shapes
 
@@ -81,7 +82,7 @@ def call_meanify(run_config_path, overwrite, n):
 		    continue
     		filter_name = hdu[3].data['band'][0]
     		if filter_name==band:
-        	    files.append(original_files)
+        	    files.append(original_file)
         if n > 0:
             files = files[:n]
         logger.info('Meanifying')
