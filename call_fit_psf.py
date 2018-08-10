@@ -54,7 +54,16 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
 		        pass
 	    if skip==True:
 		continue
-    	    filter_name = hdu[3].data['band'][0]
+	    try:
+		band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+		hdu_c = fits.open(band_test_file)
+		filter_name = hdu_c[1].data['band'][0][0]
+		print(filter_name)
+	    except:
+		try:
+    	    	    filter_name = hdu[3].data['band'][0]
+		except:
+		    continue
     	    if filter_name==band:
                 pass
 	    else:
@@ -97,7 +106,16 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
 		        pass
 	    if skip==True:
 		break
-    	    filter_name = hdu[3].data['band'][0]
+	    try:
+		band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+		hdu_c = fits.open(band_test_file)
+		filter_name = hdu_c[1].data['band'][0][0]
+		print(filter_name)
+	    except:
+		try:
+    	    	    filter_name = hdu[3].data['band'][0]
+		except:
+		    continue
 	    if config['psf']['type'] == 'OptAtmo':
            	# look up band information
 
@@ -225,7 +243,7 @@ if __name__ == '__main__':
     parser.add_argument('--meanify', action='store_true', dest='meanify',
                         help='look for meanify outputs and do those')
     parser.add_argument('--fit_interp_only', action='store_true', dest='fit_interp_only',
-                        help='if a PSF file exists, load it up and fit the interpolant. Does not need overwrite in order to, um, overwrite')
+                        help='if a PSF file exists, load it up')
     parser.add_argument('-n', action='store', dest='nmax', type=int, default=0, help='Number of fits to run')
     parser.add_argument(action='store', dest='run_config_path',
                         default='config.yaml',

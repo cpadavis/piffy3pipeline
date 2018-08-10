@@ -39,7 +39,7 @@ def call_meanify(run_config_path, overwrite, n):
     core_directory = core_directory.split("/{0}".format(program_name))[0]
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
 
-    logger = piff.setup_logger(verbose=2, )#log_file='meanify.log')
+    logger = piff.setup_logger(verbose=3, log_file='meanify.log')
 
     run_config = piff.read_config(run_config_path)
     psf_files = run_config['psf_optics_files']
@@ -70,7 +70,7 @@ def call_meanify(run_config_path, overwrite, n):
 	        skip=False
 	        for index in range(1,63):
 		    try:
-		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
 	        	hdu = fits.open(band_test_file)
 		        break
 		    except:
@@ -80,7 +80,16 @@ def call_meanify(run_config_path, overwrite, n):
 		            pass
 	        if skip==True:
 		    continue
-    		filter_name = hdu[3].data['band'][0]
+	        try:
+		    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+		    hdu_c = fits.open(band_test_file)
+		    filter_name = hdu_c[1].data['band'][0][0]
+		    print(filter_name)
+	        except:
+		    try:
+    	    	        filter_name = hdu[3].data['band'][0]
+		    except:
+		        continue
     		if filter_name==band:
         	    files.append(original_file)
         if n > 0:
@@ -120,7 +129,7 @@ def call_meanify(run_config_path, overwrite, n):
 
         # shapes = pd.DataFrame(shapes)
 
-        # fig, axs = plot_2dhist_shapes(shapes, keys, gridsize=200)
+        # fig, axs = plot_2dhist_shapes(shapes, keys, gridsize=500)
         # fig.savefig('{0}/meanify_params_{1}.pdf'.format(directory, psf_name))
 
 if __name__ == '__main__':

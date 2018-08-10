@@ -91,7 +91,7 @@ def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_t
             continue
 
         if bsub:
-            logfile = '{0}/bsub_collect_{1}.log'.format(out_directory, piff_name)
+            logfile = '{0}/bsub_collect_{1}_{2}.log'.format(out_directory, piff_name, band)
             # check file exists, make it
             if os.path.exists(logfile) and call:
                 os.remove(logfile)

@@ -331,7 +331,7 @@ def run_collect_optics(files, file_out):
     print('saving fits to {0}'.format(file_out))
     if os.path.exists(file_out):
         os.remove(file_out)
-    fits.to_hdf(file_out, 'data', mode='w')
+    fits.to_hdf(file_out, 'data')
 
 def agg_to_array(agg, key, bins_x, bins_y):
     indx_x_transform = agg.index.labels[0].values()
@@ -371,7 +371,7 @@ def run_twodhists(files, file_out_base, sep=50):
 
     # save
     print('saving agg')
-    agg.to_hdf('{0}_agg.h5'.format(file_out_base), 'agg', mode='w')
+    agg.to_hdf('{0}_agg.h5'.format(file_out_base), 'agg')
 
     # make figures
     for key in arrays:
@@ -401,7 +401,7 @@ def run_twodhists(files, file_out_base, sep=50):
         canvas.print_figure(plot_path, dpi=100)
 
     print('saving stars')
-    arrays.to_hdf('{0}_stars.h5'.format(file_out_base), 'stars', mode='w')
+    arrays.to_hdf('{0}_stars.h5'.format(file_out_base), 'stars')
 
 def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
     for unique in unique_indx:
@@ -414,6 +414,10 @@ def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
             C.mask[vi, ui] = 0
 
 def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=False, skip_oned=False, skip_twod=False):
+    core_directory = os.path.realpath(__file__)
+    program_name = core_directory.split("/")[-1]
+    core_directory = core_directory.split("/{0}".format(program_name))[0]
+    source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
     if not os.path.exists(out_directory):
         os.makedirs(out_directory)
     if band=="all":
@@ -428,14 +432,14 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 	if band=="all":
             files = original_files
 	else:
-            original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
+            original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
 	    files = []
 	    for original_file in original_files:
 		exposure = original_file.split("/")[-2][2:]
 	        skip=False
 	        for index in range(1,63):
 		    try:
-		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
 	        	hdu = fits.open(band_test_file)
 		        break
 		    except:
@@ -445,7 +449,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		            pass
 	        if skip==True:
 		    continue
-    		filter_name = hdu[3].data['band'][0]
+	        try:
+		    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+		    hdu_c = fits.open(band_test_file)
+		    filter_name = hdu_c[1].data['band'][0][0]
+		    print(filter_name)
+	        except:
+		    try:
+    	    	        filter_name = hdu[3].data['band'][0]
+		    except:
+		        continue
     		if filter_name==band:
         	    files.append(original_file)
         if len(files) > 0:
@@ -471,7 +484,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 			skip=False
 			for index in range(1,63):
 			    try:
-				band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+				band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
 				hdu = fits.open(band_test_file)
 				break
 			    except:
@@ -481,7 +494,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 				    pass
 			if skip==True:
 			    continue
-			filter_name = hdu[3].data['band'][0]
+	    		try:
+			    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+			    hdu_c = fits.open(band_test_file)
+			    filter_name = hdu_c[1].data['band'][0][0]
+			    print(filter_name)
+	    		except:
+			    try:
+    	    	    		filter_name = hdu[3].data['band'][0]
+			    except:
+		    		continue
 			if filter_name==band:
 			    files.append(original_file)
                 if len(files) > 0:
@@ -507,7 +529,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 	            skip=False
 	            for index in range(1,63):
 		        try:
-		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
 	        	    hdu = fits.open(band_test_file)
 		            break
 		        except:
@@ -517,7 +539,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		                pass
 	            if skip==True:
 		        continue
-    		    filter_name = hdu[3].data['band'][0]
+	    	    try:
+			band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+			hdu_c = fits.open(band_test_file)
+			filter_name = hdu_c[1].data['band'][0][0]
+			print(filter_name)
+	    	    except:
+			try:
+    	    	    	    filter_name = hdu[3].data['band'][0]
+			except:
+		    	    continue
     		    if filter_name==band:
         	        files.append(original_file)
             if len(files) > 0:
@@ -546,7 +577,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 	            skip=False
 	            for index in range(1,63):
 		        try:
-		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
 	        	    hdu = fits.open(band_test_file)
 		            break
 		        except:
@@ -556,7 +587,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		                pass
 	            if skip==True:
 		        continue
-    		    filter_name = hdu[3].data['band'][0]
+	    	    try:
+			band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+			hdu_c = fits.open(band_test_file)
+			filter_name = hdu_c[1].data['band'][0][0]
+			print(filter_name)
+	    	    except:
+			try:
+    	    	    	    filter_name = hdu[3].data['band'][0]
+			except:
+		    	    continue
     		    if filter_name==band:
         	        files.append(original_file)
                 if len(files) > 0:
@@ -582,7 +622,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 	            skip=False
 	            for index in range(1,63):
 		        try:
-		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
+		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
 	        	    hdu = fits.open(band_test_file)
 		            break
 		        except:
@@ -592,7 +632,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 		                pass
 	            if skip==True:
 		        continue
-    		    filter_name = hdu[3].data['band'][0]
+	    	    try:
+			band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+			hdu_c = fits.open(band_test_file)
+			filter_name = hdu_c[1].data['band'][0][0]
+			print(filter_name)
+	    	    except:
+			try:
+    	    	    	    filter_name = hdu[3].data['band'][0]
+			except:
+		    	    continue
     		    if filter_name==band:
         	        files.append(original_file)
             if len(files) > 0:

@@ -42,7 +42,7 @@ def make_graph():
 	    skip=False
 	    for index in range(1,63):
 		try:
-		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, original_exposure, index)
+		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, original_exposure, index)
 	    	    hdu = fits.open(band_test_file)
 		    break
 		except:
@@ -52,7 +52,16 @@ def make_graph():
 		        pass
 	    if skip==True:
 		continue
-    	    filter_name = hdu[3].data['band'][0]
+	    try:
+		band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+		hdu_c = fits.open(band_test_file)
+		filter_name = hdu_c[1].data['band'][0][0]
+		print(filter_name)
+	    except:
+		try:
+    	    	    filter_name = hdu[3].data['band'][0]
+		except:
+		    continue
     	    if filter_name==band:
                 exposures.append(original_exposure)  
 	graph_directory = graph_directory + "/aos_vs_piff_plots_just_for_filter_{0}".format(band)
