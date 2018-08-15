@@ -1,464 +1,357 @@
-"""
-Do the analytic shapes. Use argparse to do either each shape individually, or run it all together. A bit of a mess.
-"""
-# coding: utf-8
+# Analytic Coefficients for Piff Optical
 
-# # Analytic Coefficients for Piff Optical
-#
-# This notebook creates the Piff analytic coefficients and makes plots illustrating their accuracy.
-#
-# Our goal is to map input atmosphere and zernike coefficients to HSM shapes. This is a bit tricky since we're mapping something like 10-20 variables to 3 (7 if we include third moments). We take the approach here of fitting pairs of variables in succession.
+
 from __future__ import print_function, division
-# import matplotlib.pyplot as plt
+# fix for DISPLAY variable issue
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
-import copy
+# import copy
 # import os
-from itertools import product
+import itertools
 from sklearn.linear_model import LinearRegression
 import galsim
 import piff
 
 from piff.optatmo_psf import poly, poly_full
 
-test_mode = False
-out_dir = '/nfs/slac/g/ki/ki18/cpd/Projects/piff_des/analytics'
+#####
+# thing to modify
+#####
+config_path = '/u/ki/cpd/ki19/piff_test/y3pipeline/00514872/psf_optatmo.yaml'
+verbose = 2
+jmax_pupil = 22  # inclusive
+samples = 1000
+samples_test = 100
+order = 8  # max polynomial degree
+variables_at_once = 4  # how many different terms allowed at once. I think it has to be less than or equal to order
 
-# In[310]:
+verbose = 3
+jmax_pupil = 6  # inclusive
+samples = 10
+samples_test = 2
+order = 4  # max polynomial degree
+variables_at_once = 3  # how many different terms allowed at once. I think it has to be less than or equal to order
 
+out_file = './analytic/full_analytic_shapes__jmax_{0}__order_{1}__upto_{2}__samples__{3}.npy'.format(jmax_pupil, order, variables_at_once, samples)
 
-config = piff.read_config('/u/ki/cpd/ki19/piff_test/y3/mar_mesh_configs_fix_sph/00233466/Science-20121120s1-v20i2_limited/2018.03.29/config.yaml')
+np.random.seed(123456)
+size_max = 1.5
+g_max = 0.15
+z_max = 1.5
+size_min = 0.4
+g_min = -g_max
+z_min = -z_max
 
+nshapes = 10
+natmoparams = 3
+nparams = jmax_pupil - 3 + natmoparams
 
-# In[311]:
+base_params_draw = np.zeros(nparams + natmoparams)
+base_params_draw[natmoparams] = 0.7  # sets size to 0.7 by default -- good seeing
+base_params_analytic = np.zeros(nparams + 1)  # for the onehot
+base_params_analytic[0] = 1  # one hot needs to have, well, ones there
 
+# load up an example image to get wcs and such correct
+config = piff.read_config(config_path)
 
-# create an OptAtmoPSF for drawing
-psf_fit = piff.read('/u/ki/cpd/ki19/piff_test/y3/mar_mesh_configs_fix_sph/00233466/Science-20121120s1-v20i2_limited/2018.03.29/psf.piff')
+# modify config to be just one ccd
+config['input']['image_file_name'] = config['input']['image_file_name'].replace('*', '*_20')  # use ccd 20, selected at random
 
+# we really only need one star total
+config['input']['nstars'] = 1
 
-# In[312]:
+# and also up the number of jmax_pupil to desired
+config['psf']['jmax_pupil'] = jmax_pupil
 
+if 'modules' in config:
+    galsim.config.ImportModules(config)
+logger = piff.setup_logger(verbose=verbose)
+logger.info('Loading up stars from an image')
+stars, wcs, pointing = piff.Input.process(config['input'], logger=logger)
 
-# load up some stars
-# do import modules so we can import pixmappy wcs
-galsim.config.ImportModules(config)
-# only load one ccd
-config['input']['image_file_name'] = config['input']['image_file_name'].replace('*', '10')
-# only load 10 stars in the ccd
-config['input']['nstars'] = 10
+# remove stars weights
+for star in stars:
+    star.data.weight.array[:] = 1.
 
-if test_mode:
-    config['input']['stamp_size'] = 15
+base_star = stars[0]
 
-stars, wcs, pointing = piff.Input.process(config['input'])
+# initialize psf
+base_psf = piff.PSF.process(config['psf'], logger=logger)
 
-
-# In[313]:
-
-
-config['psf']['jmax_pupil'] = 21  # get the higher zernikes while we're at it
-
-if test_mode:
-    config['psf']['jmax_pupil'] = 7  # test
-
-
-psf = piff.PSF.process(copy.deepcopy(config['psf']))
-
-
-# In[314]:
-
-
-# create the function for drawing and measuring stars
-from piff.util import hsm_higher_order
-def draw_and_measure(param, star=stars[0]):
-    params = psf.getParams(star)
-    prof = psf.getProfile(param)
-    star_drawn = psf.drawProfile(star, prof, params)
-    # remove weighting and masking
-    star_drawn.data.weight.array[:] = 1.
-#     shape = psf.measure_shape(star_drawn, return_error=False)
-    shape = hsm_higher_order(star_drawn)  # also returns 3rd order moments
-    return shape, star_drawn
-
-
-# In[315]:
-
-
-nparams = psf.jmax_pupil + 6
-
-
-# In[318]:
-
-
-Nsamples = 201
-
-if test_mode:
-    Nsamples = 5
-
-sizes = np.linspace(0.45, 1.5, Nsamples)
-gs = np.linspace(-0.1, 0.1, Nsamples)
-zs = np.linspace(-1.5, 1.5, Nsamples)
-
-
-# In[319]:
-
-
-def determine_unique_indices(list_of_lists):
-    values = []
-    for l in list_of_lists:
-        for li in l:
-            values.append(li)
-    values = sorted(list(set(values)))
-    return values
-
-
-# In[320]:
-
-
-# create sets of batches
-all_batch_indices_flat = []
-all_batch_indices = []
-
-# atmosphere size
-batch_indices = [[0, 0, 0, 0],
-                 [0, 0, 0, 1],
-                 [0, 0, 1, 1],
-                 [0, 1, 1, 1],
-                 [1, 1, 1, 1]]
-for indx in batch_indices:
-    all_batch_indices_flat.append(indx)
-all_batch_indices.append(batch_indices)
-
-# single ellipticity or zernike with size
-for j in range(2, psf.jmax_pupil + 1):
-    batch_indices = []
-    indices = [[0, 0, 0, j],
-               [0, 0, j, j],
-               [0, j, j, j],
-               [j, j, j, j]]
-    for indx in indices:
-        indx = sorted(indx)
-        if indx not in all_batch_indices_flat:
-            batch_indices.append(indx)
-            all_batch_indices_flat.append(indx)
-    all_batch_indices.append(batch_indices)
-
-for j in range(2, psf.jmax_pupil + 1):
-    batch_indices = []
-    indices = [[0, 0, 1, j],
-               [0, 1, 1, j],
-               [1, 1, 1, j],
-               [0, 1, j, j],
-               [1, 1, j, j],
-               [1, j, j, j]]
-    for indx in indices:
-        indx = sorted(indx)
-        if indx not in all_batch_indices_flat:
-            batch_indices.append(indx)
-            all_batch_indices_flat.append(indx)
-    all_batch_indices.append(batch_indices)
-
-# double zernike
-for i in range(4, psf.jmax_pupil + 1):
-    for j in range(i + 1, psf.jmax_pupil + 1):
-        batch_indices = []
-        indices = [[0, 0, i, j],
-                   [0, i, i, j],
-                   [0, i, j, j],
-                   [i, i, j, j],
-                   [i, i, i, j],
-                   [i, j, j, j]]
-        for indx in indices:
-            indx = sorted(indx)
-            if indx not in all_batch_indices_flat:
-                batch_indices.append(indx)
-                all_batch_indices_flat.append(indx)
-        all_batch_indices.append(batch_indices)
-
-# double zernike with size
-for i in range(4, psf.jmax_pupil + 1):
-    for j in range(i + 1, psf.jmax_pupil + 1):
-        batch_indices = []
-        indices = [[0, 1, i, j],
-                   [1, i, i, j],
-                   [1, 1, i, j],
-                   [1, i, j, j]]
-        for indx in indices:
-            indx = sorted(indx)
-            if indx not in all_batch_indices_flat:
-                batch_indices.append(indx)
-                all_batch_indices_flat.append(indx)
-        all_batch_indices.append(batch_indices)
-
-# triple zernike
-for i in range(4, psf.jmax_pupil + 1):
-    for j in range(i + 1, psf.jmax_pupil + 1):
-        for k in range(j + 1, psf.jmax_pupil + 1):
-            batch_indices = []
-            indices = [[0, i, j, k],
-                       [i, i, j, k],
-                       [i, j, j, k],
-                       [i, j, k, k]]
-        for indx in indices:
-            indx = sorted(indx)
-            if indx not in all_batch_indices_flat:
-                batch_indices.append(indx)
-                all_batch_indices_flat.append(indx)
-        all_batch_indices.append(batch_indices)
-
-print(len(all_batch_indices))
-
-for i in range(4, psf.jmax_pupil + 1):
-    for j in range(i + 1, psf.jmax_pupil + 1):
-        for k in range(j + 1, psf.jmax_pupil + 1):
-            batch_indices = []
-            indices = [[1, i, j, k]]
-        for indx in indices:
-            indx = sorted(indx)
-            if indx not in all_batch_indices_flat:
-                batch_indices.append(indx)
-                all_batch_indices_flat.append(indx)
-        all_batch_indices.append(batch_indices)
-
-
-print(len(all_batch_indices_flat))
-print(len(all_batch_indices))
-
-
-# first index is shape, second index is particular set of indices or coefs
-master_indices = [[], [], [], [], [], [], []]
-master_coefs = [[], [], [], [], [], [], []]
-master_batch_indices = [[], [], [], [], [], [], []]
-master_batch_coefs = [[], [], [], [], [], [], []]
-fewer_master_indices = [[], [], [], [], [], [], []]
-fewer_master_coefs = [[], [], [], [], [], [], []]
-
-batch_shapes = []
-batch_params_analytic = []
-batch_params_draw = []
-batch_model_shapes = []
-
-chi2s = [[], [], [], [], [], [], []]  # tied to batch
-
+# initialize sklearn model
 model = LinearRegression(fit_intercept=False, copy_X=True)
-fewer_model = LinearRegression(fit_intercept=False, copy_X=True)
 
-def run_batch(batch_i):
-    batch = all_batch_indices[batch_i]
-    # figure out which params
-    unique_indices = determine_unique_indices(batch)
-    print('batch {0}'.format(batch_i))
-    print(unique_indices)
+def make_empty_master_indices_coefs():
+    master_coefs = []
+    master_indices = []
+    for j in range(nshapes):
+        master_coefs.append([])
+        master_indices.append([])
+    return master_indices, master_coefs
 
-    # turn into values
-    unique_values = []
-    for val in unique_indices:
-        if val == 0:
-            continue
-        elif val == 1:
-            if len(unique_indices) >= 4:
-                unique_values.append(sizes[::4])
+# p_indices is in terms of the analytic relations
+def measure_shapes(p, p_indices, star=base_star, psf=base_psf, logger=None):
+    param_draw = base_params_draw.copy()
+    param_analytic = base_params_analytic.copy()
+    for i, pi in zip(p_indices, p):
+        param_draw[i + natmoparams - 1] = pi
+        param_analytic[i] = pi
+
+    prof = psf.getProfile(param_draw)
+    drawn_star = psf.drawProfile(star, prof, param_draw)
+    shape = psf.measure_shape(drawn_star, return_error=False, logger=logger)
+    return shape, param_analytic, drawn_star
+
+def predict_shapes(p, coefs, indices):
+    ypred = np.array([poly(p, np.array(coef), np.array(index))
+                           for coef, index in zip(coefs, indices)]).T
+    return ypred
+
+# TODO: alternative modes of updating this? medians, etc?
+def consolidate_indices(shapes_indices, shapes_coefs, new_indices, new_coefs, logger):
+    # this one _adds_ the new coefs to the old ones
+    # shapes_of_indices.shape = (nshapes, ncoefs, norder)
+    # shapes_of_coefs.shape = (nshapes, ncoefs)
+    # same with new_
+    for shapes_indices_i, shapes_coefs_i, indices, coefs in zip(shapes_indices, shapes_coefs, new_indices, new_coefs):
+        for index, coef in zip(indices, coefs):
+            index = sorted(index)
+            if index in shapes_indices_i:
+                loc = shapes_indices_i.index(index)
+                shapes_coefs_i[loc] += coef
             else:
-                unique_values.append(sizes)
-        elif val in [2, 3]:
-            unique_values.append(gs)
+                shapes_indices_i.append(index)
+                shapes_coefs_i.append(coef)
+
+    return shapes_indices, shapes_coefs
+
+def generate_sample(p_indices, nsamples, logger):
+    logger.debug('generating shapes')
+    p_min = []
+    p_max = []
+    for pi in p_indices:
+        if pi == 1:
+            p_min.append(size_min)
+            p_max.append(size_max)
+        elif pi == 2 or pi == 3:
+            p_min.append(g_min)
+            p_max.append(g_max)
         else:
-            if len(unique_indices) >= 4:
-                unique_values.append(zs[::4])
-            else:
-                unique_values.append(zs)
-    iterator = product(*unique_values)
+            p_min.append(z_min)
+            p_max.append(z_max)
+    p_min = np.array(p_min)
+    p_max = np.array(p_max)
 
-    # generate indices and shapes
-    params_analytic = []
-    params_draw = []
-    shapes = []
-    for vals in iterator:
-        param_draw = np.zeros(nparams)
-        param_analytic = np.zeros(nparams - 3 + 1)  # 1 for onehot, -3 for the extra 3 in middle
-        param_analytic[0] = 1
-        # also set the size to 1 unless otherwise noted
-        param_analytic[1] = 1.
-        param_draw[0] = 1.
-        for i, val in enumerate(vals):
-            if 0 in unique_indices:
-                ind = unique_indices[i + 1] - 1
-            else:
-                ind = unique_indices[i] - 1
+    p_params_full = np.random.random((nsamples, len(p_indices))) * (p_max - p_min) + p_min
 
-            param_analytic[ind + 1] = val
-            # put into param_draw
-            if ind >= 3:
-                # account for the extra 3 params\
-                ind += 3
-            param_draw[ind] = val
+    p_analytic = []
+    p_shapes = []
+    p_params = []
+    # generate values
+    for p in p_params_full:
+        # measure shapes
         try:
-            shape, star_drawn = draw_and_measure(param_draw)
-        except:
-            print('Failed!')
-            print(unique_indices)
-            print(vals)
-            print(param_draw)
-            print(param_analytic)
-            print('skipping')
-            continue
-        shape = np.array(shape)
+            shape, param_analytic, drawn_star = measure_shapes(p, p_indices)
+            p_shapes.append(shape)
+            p_analytic.append(param_analytic)
+            p_params.append(p)
+        except piff.ModelFitError:
+            logger.warning('Failed model fit for params {0} indices {1}'.format(str(p), str(p_indices)))
+    p_analytic = np.array(p_analytic)
+    p_shapes = np.array(p_shapes)
+    p_params = np.array(p_params)
 
-        if np.any(shape != shape):
-            print('Failure cause of NaNs')
-            print(vals)
-            continue
+    return p_params, p_shapes, p_analytic
+
+def fit_model(p_indices, samples, samples_test, master_indices, master_coefs, logger):
+
+    # make fit indices
+    p_fit_indices = np.array([_ for _ in itertools.combinations_with_replacement([0] + p_indices, order)])
+    logger.debug('p fit indices:')
+    logger.debug('{0}'.format(str(p_fit_indices)))
+
+    p_params, p_shapes, p_analytic = generate_sample(p_indices, samples + samples_test, logger)
+
+    # make prediction from current coefs
+    Xpoly = poly_full(p_analytic, p_fit_indices)
+    if len(master_coefs[0]) != 0:
+        ypred = predict_shapes(p_analytic, master_coefs, master_indices)
+
+    new_indices = []
+    new_coefs = []
+    for j in range(p_shapes.shape[1]):
+        logger.debug('Fitting param {0}'.format(len(new_coefs)))
+        yi = p_shapes[:, j]
+        if len(master_coefs[j]) == 0:
+            yfit = yi
         else:
-            shapes.append(shape[3:])
-            params_analytic.append(param_analytic)
-            params_draw.append(param_draw)
-    print('shapes drawn and measured')
-    shapes = np.array(shapes)
-    params_analytic = np.array(params_analytic)
-    params_draw = np.array(params_draw)
+            ypredi = ypred[:, j]
+            yfit = yi - ypredi
 
-    np.save('{0}/shapes_{1}.npy'.format(out_dir, batch_i), shapes)
-    np.save('{0}/params_analytic_{1}.npy'.format(out_dir, batch_i), params_analytic)
-    np.save('{0}/params_draw_{1}.npy'.format(out_dir, batch_i), params_draw)
+        # fit but remove bit accounted for by previous fits
+        model.fit(Xpoly[:samples], yfit[:samples])
+        coefs = model.coef_.tolist()
 
-def solve_and_merge():
-    fails = []
-    batch_flat = []
-    shape_flat = []
-    for batch_i, batch in enumerate(all_batch_indices):
+        # this would be where you could filter
+        filtered_indices = p_fit_indices
+        filtered_coefs = coefs
 
-        try:
-            shapes = np.load('{0}/shapes_{1}.npy'.format(out_dir, batch_i))
-            params_analytic = np.load('{0}/params_analytic_{1}.npy'.format(out_dir, batch_i))
-            params_draw = np.load('{0}/params_draw_{1}.npy'.format(out_dir, batch_i))
-        except:
-            fails.append(batch_i)
-            print('Failed {0}'.format(batch_i))
-            continue
-        print(batch_i, determine_unique_indices(batch), [len(c) for c in master_coefs], [len(c) for c in fewer_master_coefs])
+        new_indices.append(filtered_indices)
+        new_coefs.append(filtered_coefs)
+    logger.debug('indices, coefs:')
+    logger.debug('{0}'.format(str(new_indices)))
+    logger.debug('{0}'.format(str(new_coefs)))
 
-        batch_shapes.append(shapes)
-        batch_params_analytic.append(params_analytic)
-        batch_params_draw.append(params_draw)
+    return new_indices, new_coefs, p_shapes, p_analytic, p_params
 
-        all_fin_shapes = []
-        for i, yshape in enumerate(shapes.T):
-            # subtract off expected shapes from current master list
-            if len(master_coefs[i]) == 0:
-                y = yshape
-            else:
-                pshape = poly(params_analytic, np.array(master_coefs[i]), np.array(master_indices[i]))
-                y = yshape - pshape
+def evaluate_fit(p_indices, p_params, y, ymodel, samples, logger):
+    # chi2 on training and test samples, by shape
+    train_chi2 = np.mean(np.square(y - ymodel)[:samples], axis=0)
+    train_str = 'chi2 on train set:'
+    for chi2 in train_chi2:
+        train_str += ' {0:.3e}'.format(chi2)
+    logger.info(train_str)
+    # also print the variance of the y == what you would have gotten
+    test_chi2 = np.mean(np.square(y - ymodel)[samples:], axis=0)
+    test_str = 'chi2 on test  set:'
+    for chi2 in test_chi2:
+        test_str += ' {0:.3e}'.format(chi2)
+    logger.info(test_str)
+    train_var = np.var(y[:samples], axis=0)
+    var_str = 'var  on train set:'
+    for var in train_var:
+        var_str += ' {0:.3e}'.format(var)
+    logger.info(var_str)
+    test_var = np.var(y[samples:], axis=0)
+    var_str = 'var  on test  set:'
+    for var in test_var:
+        var_str += ' {0:.3e}'.format(var)
+    logger.info(var_str)
 
-            if len(fewer_master_coefs[i]) == 0:
-                fewer_y = yshape
-            else:
-                fewer_pshape = poly(params_analytic, np.array(fewer_master_coefs[i]), np.array(fewer_master_indices[i]))
-                fewer_y = yshape - fewer_pshape
+    logger.debug('producing plots')
+    # plots
+    xlabels = ['', 'size', 'g1', 'g2'] + ['z{0:02d}'.format(zernike) for zernike in range(4, jmax_pupil + 1)]
+    ylabels = ['flux', 'u0', 'v0', 'e0', 'e1', 'e2', 'zeta1', 'zeta2', 'delta1', 'delta2']
+    fig, axs = plt.subplots(ncols=2 * len(p_indices), nrows=y.shape[1], squeeze=False,
+                            figsize=(4 * 2 * len(p_indices), 3 * y.shape[1]))
+    for j in range(y.shape[1]):
+        ylabel = ylabels[j]
+        for k in range(len(p_indices)):
+            pk = p_indices[k]
+            # data
+            xlabel = xlabels[pk]
+            ax = axs[j, 2 * k]  # ax is [row, col]
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            # C0 = train; C1 = test, . = data, x = model
+            ax.plot(p_params[:samples, k], y[:samples, j], 'o', color='C0', alpha=0.3)
+            ax.plot(p_params[samples:, k], y[samples:, j], 'o', color='C1', alpha=0.3)
+            ax.plot(p_params[:samples, k], ymodel[:samples, j], 'x', color='C2', alpha=0.3)
+            ax.plot(p_params[samples:, k], ymodel[samples:, j], 'x', color='C3', alpha=0.3)
 
-            # fit polyomial
-            Xpoly = poly_full(params_analytic, np.array(batch))
-            model.fit(Xpoly, y)
+            # residual
+            ax = axs[j, 2 * k + 1]  # ax is [row, col]
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel('data - model: ' + ylabel)
+            ax.plot(p_params[:samples, k], y[:samples, j] - ymodel[:samples, j], '.', color='C0')
+            ax.plot(p_params[samples:, k], y[samples:, j] - ymodel[samples:, j], '.', color='C1')
+    fig.tight_layout()
+    return fig
 
-            # append
-            coef = model.coef_.tolist()
-            # purge the small ones
-            batch_out = []
-            coef_out = []
-            for coefi, batchi in zip(coef, batch):
-                if np.abs(coefi) > 1e-8:
-                    coef_out.append(coefi)
-                    batch_out.append(batchi)
-            master_indices[i] += batch_out
-            master_coefs[i] += coef_out
+# generate all p indices
+all_p_indices = []
+for repeat in range(1, variables_at_once + 1):
+    all_p_indices_i = [list(_) for _ in itertools.combinations([asdf for asdf in range(1, nparams + 1)], repeat)]
+    all_p_indices += all_p_indices_i
 
-            # repeat for fewer
-            fewer_model.fit(Xpoly, fewer_y)
-            fewer_batch_out = []
-            fewer_coef_out = []
-            coef = fewer_model.coef_.tolist()
-            for coefi, batchi in zip(coef, batch):
-                if np.abs(coefi) > 1e-2:
-                    fewer_coef_out.append(coefi)
-                    fewer_batch_out.append(batchi)
+logger.info('Fitting {0} combinations'.format(len(all_p_indices)))
 
-            fewer_master_indices[i] += fewer_batch_out
-            fewer_master_coefs[i] +=   fewer_coef_out
+def fit_and_evaluate(ith_fit, master_indices, master_coefs):
+    p_indices = all_p_indices[ith_fit]
+    logger.info('Fitting {0}: {1}'.format(ith_fit, p_indices))
 
-            # master_batch_indices[i].append(batch)
-            # master_batch_coefs[i].append(model.coef_.tolist())
+    logger.info('Performing fit {0} for: {1}'.format(ith_fit, p_indices))
+    new_indices, new_coefs, p_shapes, p_analytic, p_params = fit_model(p_indices, samples, samples_test, master_indices, master_coefs, logger)
 
-            # stats
-            # fin_shapes = poly(params_analytic, np.array(master_coefs[i]), np.array(master_indices[i]))
-            # all_fin_shapes.append(fin_shapes)
-            # chi2i = np.sum(np.square(yshape - fin_shapes))
-            # chi2s[i].append(chi2i)
-        # all_fin_shapes = np.array(all_fin_shapes).T
-        # batch_model_shapes.append(all_fin_shapes)
+    logger.debug('predicing shapes for chi2')
+    # predict shapes to go into ith_shapes_model
+    p_shapes_model = predict_shapes(p_analytic, new_coefs, new_indices)
 
-    # write the analytic coefs
-    final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
-    np.save(out_dir + '/notebook_analytic_coefs.npy', final_analytic_coefs)
-    final_analytic_coefs = {'coefs': fewer_master_coefs, 'indices': fewer_master_indices, 'after_burner': [[0, 1] * len(fewer_master_coefs)]}
-    np.save(out_dir + '/notebook_fewer_analytic_coefs.npy', final_analytic_coefs)
+    #####
+    # evaluate fit
+    #####
+    fig = evaluate_fit(p_indices, p_params, p_shapes, p_shapes_model, samples, logger)
+    fig.savefig(out_file.replace('.npy', '_{0:04d}.pdf'.format(ith_fit)))
+    plt.close('all')
+    plt.close()
 
-def solve_and_merge_flat():
-    fails = []
-    batch_flat = []
-    shapes_flat = []
-    params_analytic = []
+    # and save ones with flux and centroid shifts for records
+    full_final_analytic_coefs = {'coefs': new_coefs, 'indices': new_indices, 'after_burner': [[0, 1] * len(new_coefs)]}
+    np.save(out_file.replace('.npy', '_{0:04d}.npy'.format(ith_fit)), full_final_analytic_coefs)
 
-    for batch_i, batch in enumerate(all_batch_indices):
+    master_indices, master_coefs = consolidate_indices(master_indices, master_coefs, new_indices, new_coefs, logger)
+    return master_indices, master_coefs
 
-        try:
-            shapes = np.load('{0}/shapes_{1}.npy'.format(out_dir, batch_i))
-            param_analytic = np.load('{0}/params_analytic_{1}.npy'.format(out_dir, batch_i))
-        except:
-            fails.append(batch_i)
-            print('Failed {0}'.format(batch_i))
-            continue
-        print(batch_i)
+def merge():
 
-        batch_flat += batch
-        for shape in shapes:
-            shapes_flat.append(shape)
-        for p in param_analytic:
-            params_analytic.append(p)
+    master_indices, master_coefs = make_empty_master_indices_coefs()
 
-    params_analytic = np.array(params_analytic)
-    shapes_flat = np.array(shapes_flat)
+    logger.info('consolidating indices')
 
-    # try a single mega fit
-    print('mega fit')
-    Xpoly = poly_full(params_analytic, np.array(batch_flat))
-    for i, yshape in enumerate(shapes_flat.T):
-        model.fit(Xpoly, yshape)
-        coef = fewer_model.coef_.tolist()
-        batch_out = []
-        coef_out = []
-        for coefi, batchi in zip(coef, batch_flat):
-            if np.abs(coefi) > 1e-8:
-                coef_out.append(coefi)
-                batch_out.append(batchi)
-        master_indices[i] += batch_out
-        master_coefs[i] += coef_out
+    # load up indices
+    for ith_fit in range(len(all_p_indices)):
+        temp_file = out_file.replace('.npy', '_{0:04d}.npy'.format(ith_fit))
+        temp_analytic_coefs = np.load(temp_file).item()
+        new_coefs = temp_analytic_coefs['coefs']
+        new_indices = temp_analytic_coefs['indices']
 
+        master_indices, master_coefs = consolidate_indices(master_indices, master_coefs, new_indices, new_coefs, logger)
 
-    final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
-    np.save(out_dir + '/notebook_mega_analytic_coefs.npy', final_analytic_coefs)
+    # and save ones with flux and centroid shifts for records
+    full_final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
+    np.save(out_file, full_final_analytic_coefs)
+
+    return full_final_analytic_coefs
+
+def test(full_final_analytic_coefs):
+    master_coefs = full_final_analytic_coefs['coefs']
+    master_indices = full_final_analytic_coefs['indices']
+
+    final_samples = 100 * (samples + samples_test)
+    logger.info('Creating test sample from {0} samples'.format(final_samples))
+    p_indices = range(1, nparams + 1)
+
+    p_params, p_shapes, p_analytic = generate_sample(p_indices, final_samples, logger)
+    logger.debug('predicing shapes for chi2')
+    # predict shapes to go into ith_shapes_model
+    p_shapes_model = predict_shapes(p_analytic, master_coefs, master_indices)
+    fig = evaluate_fit(p_indices, p_params, p_shapes, p_shapes_model, 1, logger)  # not sure if the fitter would like having 0 entries for one of the plots
+    fig.savefig(out_file.replace('.npy', '_all.pdf'))
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', type=int, dest='index', help='which zone to call')
+    parser.add_argument('-i', type=int, dest='index', help='which fit to call')
     options = parser.parse_args()
     index = options.index - 1
 
+    index_iter = 50  # do 50 with each call
+
+
     if index == -1:
-        # merge
-        solve_and_merge()
+        full_final_analytic_coefs = merge()
+        test(full_final_analytic_coefs)
     elif index == -2:
-        # merge
-        solve_and_merge_flat()
+        # run the fulllll thing
+        master_indices, master_coefs = make_empty_master_indices_coefs()
+        for j in range(0, len(all_p_indices)):
+            master_indices, master_coefs = fit_and_evaluate(j, master_indices, master_coefs)
+        full_final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
+        np.save(out_file, full_final_analytic_coefs)
+        test(full_final_analytic_coefs)
     else:
-        run_batch(index)
+        for j in range(0, index_iter):
+            master_indices, master_coefs = make_empty_master_indices_coefs()
+            master_indices, master_coefs = fit_and_evaluate(index * index_iter + j, master_indices, master_coefs)
