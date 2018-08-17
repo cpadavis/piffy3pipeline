@@ -450,7 +450,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
     for shape_key in ['data_e0', 'de0', 'data_e1', 'de1', 'data_e2', 'de2',
                       'data_delta1', 'ddelta1', 'data_delta2', 'ddelta2',
                       'data_zeta1', 'dzeta1', 'data_zeta2', 'dzeta2',
-                      'atmo_size', 'atmo_g1', 'atmo_g2']:
+                      'atmo_size', 'atmo_g1', 'atmo_g2']:  # TODO: fix atmo reference this
         plotdict[shape_key] = {'key_x': 'data_flux', 'key_y': shape_key,
                                'bins_x': np.logspace(3, 7, 501), 'log_x': True}
     if not skip_oned:

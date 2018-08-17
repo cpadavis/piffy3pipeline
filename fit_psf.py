@@ -373,6 +373,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 model_stars = psf.drawStarList(stars)
                 shapes = measure_star_shape(stars, model_stars, logger=logger)
 
+                # TODO: fix this with revised params
                 param_keys = ['atmo_size', 'atmo_g1', 'atmo_g2']
                 if psf.atmosphere_model == 'vonkarman':
                     param_keys += ['atmo_L0']

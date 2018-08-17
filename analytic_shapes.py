@@ -1,5 +1,6 @@
 # Analytic Coefficients for Piff Optical
 
+# TODO: when saving pdfs and variables also indicate that indices are used
 
 from __future__ import print_function, division
 # fix for DISPLAY variable issue
@@ -24,15 +25,22 @@ verbose = 2
 jmax_pupil = 22  # inclusive
 samples = 1000
 samples_test = 100
-order = 8  # max polynomial degree
-variables_at_once = 4  # how many different terms allowed at once. I think it has to be less than or equal to order
-
-verbose = 3
-jmax_pupil = 6  # inclusive
-samples = 10
-samples_test = 2
-order = 4  # max polynomial degree
+order = 6  # max polynomial degree
 variables_at_once = 3  # how many different terms allowed at once. I think it has to be less than or equal to order
+
+# verbose = 3
+# jmax_pupil = 5  # inclusive
+# samples = 10
+# samples_test = 2
+# order = 4  # max polynomial degree
+# variables_at_once = 2  # how many different terms allowed at once. I think it has to be less than or equal to order
+
+# verbose = 3
+# jmax_pupil = 10  # inclusive
+# samples = 500
+# samples_test = 50
+# order = 6  # max polynomial degree
+# variables_at_once = 2  # how many different terms allowed at once. I think it has to be less than or equal to order
 
 out_file = './analytic/full_analytic_shapes__jmax_{0}__order_{1}__upto_{2}__samples__{3}.npy'.format(jmax_pupil, order, variables_at_once, samples)
 
@@ -43,6 +51,13 @@ z_max = 1.5
 size_min = 0.4
 g_min = -g_max
 z_min = -z_max
+
+# we also will filter if the parameter std is less than this value
+do_filter = True
+min_shapes_ranges = [0.01, 0.01, 0.01,
+                     0.002, 0.002, 0.002,
+                     0.002, 0.002, 0.002, 0.002
+                     ]
 
 nshapes = 10
 natmoparams = 3
@@ -105,11 +120,42 @@ def measure_shapes(p, p_indices, star=base_star, psf=base_psf, logger=None):
     return shape, param_analytic, drawn_star
 
 def predict_shapes(p, coefs, indices):
-    ypred = np.array([poly(p, np.array(coef), np.array(index))
-                           for coef, index in zip(coefs, indices)]).T
+    ypred = []
+    for coef, index in zip(coefs, indices):
+        if len(coef) == 0:
+            ypred.append(np.zeros(len(p)))
+        else:
+            ypred.append(poly(p, np.array(coef), np.array(index)))
+    ypred = np.array(ypred).T
     return ypred
 
-# TODO: alternative modes of updating this? medians, etc?
+def consolidate_indices_median(shapes_indices, shapes_coefs, all_indices, all_coefs, logger):
+    # this one _adds_ the new coefs to the old ones
+    # shapes_of_indices.shape = (nshapes, ncoefs, norder)
+    # shapes_of_coefs.shape = (nshapes, ncoefs)
+    # all_coefs = (nfits, nshapes, ncoefs)
+    # all_indices = (nfits, nshapes, ncoefs, norder)
+    for new_indices, new_coefs in zip(all_indices, all_coefs):
+        for shapes_indices_i, shapes_coefs_i, indices, coefs in zip(shapes_indices, shapes_coefs, new_indices, new_coefs):
+            for index, coef in zip(indices, coefs):
+                index = sorted(index)
+                if index in shapes_indices_i:
+                    loc = shapes_indices_i.index(index)
+                    shapes_coefs_i[loc].append(coef)
+                else:
+                    shapes_indices_i.append(index)
+                    shapes_coefs_i.append([coef])
+    final_shapes_coefs = []
+    for i, shapes_coefs_i in enumerate(shapes_coefs):
+        final_shapes_coefs.append([])
+        for j, coefs in enumerate(shapes_coefs_i):
+            coef = np.median(coefs)
+            print(shapes_indices[i][j], coef)
+            print(coefs)
+            final_shapes_coefs[i].append(coef)
+
+    return shapes_indices, shapes_coefs
+
 def consolidate_indices(shapes_indices, shapes_coefs, new_indices, new_coefs, logger):
     # this one _adds_ the new coefs to the old ones
     # shapes_of_indices.shape = (nshapes, ncoefs, norder)
@@ -185,6 +231,7 @@ def fit_model(p_indices, samples, samples_test, master_indices, master_coefs, lo
         logger.debug('Fitting param {0}'.format(len(new_coefs)))
         yi = p_shapes[:, j]
         if len(master_coefs[j]) == 0:
+            logger.debug('No master coefs prediction')
             yfit = yi
         else:
             ypredi = ypred[:, j]
@@ -275,23 +322,49 @@ def fit_and_evaluate(ith_fit, master_indices, master_coefs):
     logger.info('Performing fit {0} for: {1}'.format(ith_fit, p_indices))
     new_indices, new_coefs, p_shapes, p_analytic, p_params = fit_model(p_indices, samples, samples_test, master_indices, master_coefs, logger)
 
+
+    # filter
+    shapes_range = np.max(p_shapes, axis=0) - np.min(p_shapes, axis=0)
+    if do_filter:
+        filtered_new_indices = []
+        filtered_new_coefs = []
+        for indices, coefs, shapes_range, min_shapes_range in zip(new_indices, new_coefs, shapes_range, min_shapes_ranges):
+            if shapes_range < min_shapes_range:
+                filtered_new_indices.append([])
+                filtered_new_coefs.append([])
+                logger.warning('Skipping Shape {0} because range {1} is less than min range {2}'.format(len(filtered_new_indices), shapes_range, min_shapes_range))
+            else:
+                filtered_new_indices.append(indices)
+                filtered_new_coefs.append(coefs)
+    else:
+        filtered_new_indices = new_indices
+        filtered_new_coefs = new_coefs
+
+    master_indices, master_coefs = consolidate_indices(master_indices, master_coefs, filtered_new_indices, filtered_new_coefs, logger)
+
+    for shape_i, coef in enumerate(master_coefs):
+        logger.debug('Currently have {0} coefficients for shape {1}'.format(len(coef), shape_i))
+
+    # and save ones with flux and centroid shifts for records
+    full_final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
+    np.save(out_file.replace('.npy', '_{0:04d}.npy'.format(ith_fit)), full_final_analytic_coefs)
+
     logger.debug('predicing shapes for chi2')
     # predict shapes to go into ith_shapes_model
-    p_shapes_model = predict_shapes(p_analytic, new_coefs, new_indices)
+    p_shapes_model = predict_shapes(p_analytic, master_coefs, master_indices)
 
     #####
     # evaluate fit
     #####
     fig = evaluate_fit(p_indices, p_params, p_shapes, p_shapes_model, samples, logger)
-    fig.savefig(out_file.replace('.npy', '_{0:04d}.pdf'.format(ith_fit)))
+    out_file_i = out_file.replace('.npy', '_{0:04d}'.format(ith_fit))
+    out_file_i += '_indices_'
+    for i in p_indices:
+        out_file_i += '_{0}'.format(i)
+    out_file_i += '.pdf'
+    fig.savefig(out_file_i)
     plt.close('all')
     plt.close()
-
-    # and save ones with flux and centroid shifts for records
-    full_final_analytic_coefs = {'coefs': new_coefs, 'indices': new_indices, 'after_burner': [[0, 1] * len(new_coefs)]}
-    np.save(out_file.replace('.npy', '_{0:04d}.npy'.format(ith_fit)), full_final_analytic_coefs)
-
-    master_indices, master_coefs = consolidate_indices(master_indices, master_coefs, new_indices, new_coefs, logger)
     return master_indices, master_coefs
 
 def merge():
@@ -301,13 +374,18 @@ def merge():
     logger.info('consolidating indices')
 
     # load up indices
+    all_indices = []
+    all_coefs = []
     for ith_fit in range(len(all_p_indices)):
         temp_file = out_file.replace('.npy', '_{0:04d}.npy'.format(ith_fit))
         temp_analytic_coefs = np.load(temp_file).item()
         new_coefs = temp_analytic_coefs['coefs']
         new_indices = temp_analytic_coefs['indices']
 
-        master_indices, master_coefs = consolidate_indices(master_indices, master_coefs, new_indices, new_coefs, logger)
+        all_coefs.append(new_coefs)
+        all_indices.append(new_indices)
+
+    master_indices, master_coefs = consolidate_indices_median(master_indices, master_coefs, all_indices, all_coefs, logger)
 
     # and save ones with flux and centroid shifts for records
     full_final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
@@ -319,7 +397,7 @@ def test(full_final_analytic_coefs):
     master_coefs = full_final_analytic_coefs['coefs']
     master_indices = full_final_analytic_coefs['indices']
 
-    final_samples = 100 * (samples + samples_test)
+    final_samples = 10 * (samples + samples_test)
     logger.info('Creating test sample from {0} samples'.format(final_samples))
     p_indices = range(1, nparams + 1)
 
@@ -333,7 +411,7 @@ def test(full_final_analytic_coefs):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', type=int, dest='index', help='which fit to call')
+    parser.add_argument('-i', type=int, dest='index', help='which fit to call', default=0)
     options = parser.parse_args()
     index = options.index - 1
 
@@ -341,13 +419,25 @@ if __name__ == '__main__':
 
 
     if index == -1:
-        full_final_analytic_coefs = merge()
-        test(full_final_analytic_coefs)
-    elif index == -2:
-        # run the fulllll thing
+        # run the fulllll thing adding each at a time
         master_indices, master_coefs = make_empty_master_indices_coefs()
         for j in range(0, len(all_p_indices)):
             master_indices, master_coefs = fit_and_evaluate(j, master_indices, master_coefs)
+        full_final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
+        np.save(out_file, full_final_analytic_coefs)
+        test(full_final_analytic_coefs)
+    elif index == -2:
+        full_final_analytic_coefs = merge()
+        np.save(out_file, full_final_analytic_coefs)
+        test(full_final_analytic_coefs)
+    elif index == -3:
+        # run full but with median attachments
+        all_indices = []
+        all_coefs = []
+        for j in range(0, len(all_p_indices)):
+            master_indices, master_coefs = make_empty_master_indices_coefs()
+            master_indices, master_coefs = fit_and_evaluate(j, master_indices, master_coefs)
+        full_final_analytic_coefs = merge()
         full_final_analytic_coefs = {'coefs': master_coefs, 'indices': master_indices, 'after_burner': [[0, 1] * len(master_coefs)]}
         np.save(out_file, full_final_analytic_coefs)
         test(full_final_analytic_coefs)
