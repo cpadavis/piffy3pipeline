@@ -447,7 +447,8 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 
         for stars, label in zip([psf.stars, test_stars], ['train', 'test']):
             # get shapes
-            shapes = measure_star_shape(stars, psf, logger=logger)
+            model_stars = psf.drawStarList(stars)
+            shapes = measure_star_shape(stars, model_stars, logger=logger)
             # save shapes
             shapes.to_hdf('{0}/shapes_{1}_{2}.h5'.format(directory, label, piff_name), 'data', mode='w')
 
