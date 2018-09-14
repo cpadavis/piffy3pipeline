@@ -392,8 +392,14 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     # fit stars for stats
                     new_stars = []
                     for star, param in zip(stars, params):
-                        new_star, res = psf.fit_model(star, param, vary_shape=False, vary_optics=False, logger=logger)
-                        new_stars.append(new_star)
+                        try:
+                            new_star, res = psf.fit_model(star, param, vary_shape=False, vary_optics=False, logger=logger)
+                            new_stars.append(new_star) 
+                        except (KeyboardInterrupt, SystemExit):
+                            raise
+                        except Exception as e:
+                            logger.warning('{0}'.format(str(e)))
+                            logger.warning('Warning! Failed to fit atmosphere model for star {0}. Ignoring star in atmosphere fit'.format(star))
                     stars = new_stars
 
                 # do the output processing
