@@ -55,8 +55,11 @@ def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_t
 
         # code to make job_directory and name
         out_directory = '{0}/plots/{1}'.format(directory, piff_name)
+        out_directory_base = '{0}/plots'.format(directory)
         if not os.path.exists(out_directory):
-            os.makedirs(out_directory)
+            #os.makedirs(out_directory)
+            os.system("mkdir {0}".format(out_directory_base))
+            os.system("mkdir {0}".format(out_directory))
         job_name = 'collect_{0}'.format(piff_name)
 
         # create command
@@ -94,7 +97,8 @@ def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_t
             logfile = '{0}/bsub_collect_{1}_{2}.log'.format(out_directory, piff_name, band)
             # check file exists, make it
             if os.path.exists(logfile) and call:
-                os.remove(logfile)
+                #os.remove(logfile)
+                os.system("rm {0}".format(logfile))
 
             bsub_command = ['bsub',
                             '-J', job_name,

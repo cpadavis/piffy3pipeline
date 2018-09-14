@@ -164,13 +164,13 @@ def run_rho(files, plot_path, uv_coord):
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
         # load up the dataframe containing the shapes as measured with hsm
-	shapes, nocut_shapes, conds = load_shapes(fo)
-	#try:
-        #    shapes, nocut_shapes, conds = load_shapes(fo)
-	#except:
-	#    print("failure to generate rho statistics for a particular exposure!")
-	#    print("fo: {0}".format(fo))
-	#    continue
+        shapes, nocut_shapes, conds = load_shapes(fo)
+        #try:
+             #shapes, nocut_shapes, conds = load_shapes(fo)
+        #except:
+        #    print("failure to generate rho statistics for a particular exposure!")
+        #    print("fo: {0}".format(fo))
+        #    continue
         all_shapes.append(shapes)
     print('concatenating')
     shapes = pd.concat(all_shapes, ignore_index=True)
@@ -421,46 +421,46 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
     if not os.path.exists(out_directory):
         os.makedirs(out_directory)
     if band=="all":
-	pass
+        pass
     else:
-	out_directory = out_directory + "/filter_{0}".format(band)
-	os.system("mkdir {0}".format(out_directory))
+        out_directory = out_directory + "/filter_{0}".format(band)
+        os.system("mkdir {0}".format(out_directory))
 
     # params
     if do_optatmo:
         original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
-	if band=="all":
+        if band=="all":
             files = original_files
-	else:
+        else:
             original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
-	    files = []
-	    for original_file in original_files:
-		exposure = original_file.split("/")[-2][2:]
-	        skip=False
-	        for index in range(1,63):
-		    try:
-		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-	        	hdu = fits.open(band_test_file)
-		        break
-		    except:
-		        if index==62:
-			    skip = True
-		        else:
-		            pass
-	        if skip==True:
-		    continue
-	        try:
-		    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-		    hdu_c = fits.open(band_test_file)
-		    filter_name = hdu_c[1].data['band'][0][0]
-		    print(filter_name)
-	        except:
-		    try:
-    	    	        filter_name = hdu[3].data['band'][0]
-		    except:
-		        continue
-    		if filter_name==band:
-        	    files.append(original_file)
+            files = []
+            for original_file in original_files:
+                exposure = original_file.split("/")[-2][2:]
+                skip=False
+                for index in range(1,63):
+                    try:
+                        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                        hdu = fits.open(band_test_file)
+                        break
+                    except:
+                        if index==62:
+                            skip = True
+                        else:
+                            pass
+                if skip==True:
+                    continue
+                try:
+                    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                    hdu_c = fits.open(band_test_file)
+                    filter_name = hdu_c[1].data['band'][0][0]
+                    print(filter_name)
+                except:
+                    try:
+                        filter_name = hdu[3].data['band'][0]
+                    except:
+                        continue
+                if filter_name in band:
+                    files.append(original_file)
         if len(files) > 0:
             print('collecting optatmo params for {0} for {1} psfs'.format(piff_name, len(files)))
             file_out = '{0}/fit_parameters_{1}.h5'.format(out_directory, piff_name)
@@ -474,38 +474,38 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
             # for label in ['test']:
             for label in ['test', 'train']:
                 original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-		if band=="all":
-		    files = original_files
-		else:
-		    original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-		    files = []
-		    for original_file in original_files:
-			exposure = original_file.split("/")[-2][2:]
-			skip=False
-			for index in range(1,63):
-			    try:
-				band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-				hdu = fits.open(band_test_file)
-				break
-			    except:
-				if index==62:
-				    skip = True
-				else:
-				    pass
-			if skip==True:
-			    continue
-	    		try:
-			    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-			    hdu_c = fits.open(band_test_file)
-			    filter_name = hdu_c[1].data['band'][0][0]
-			    print(filter_name)
-	    		except:
-			    try:
-    	    	    		filter_name = hdu[3].data['band'][0]
-			    except:
-		    		continue
-			if filter_name==band:
-			    files.append(original_file)
+                if band=="all":
+                    files = original_files
+                else:
+                    original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+                    files = []
+                    for original_file in original_files:
+                        exposure = original_file.split("/")[-2][2:]
+                        skip=False
+                        for index in range(1,63):
+                            try:
+                                band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                                hdu = fits.open(band_test_file)
+                                break
+                            except:
+                                if index==62:
+                                    skip = True
+                                else:
+                                    pass
+                        if skip==True:
+                            continue
+                        try:
+                            band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                            hdu_c = fits.open(band_test_file)
+                            filter_name = hdu_c[1].data['band'][0][0]
+                            print(filter_name)
+                        except:
+                            try:
+                                filter_name = hdu[3].data['band'][0]
+                            except:
+                                continue
+                        if filter_name in band:
+                            files.append(original_file)
                 if len(files) > 0:
                     print('computing rho stats for {0} for {1} psfs'.format(piff_name, len(files)))
                     if uv_coord:
@@ -519,38 +519,38 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
         # twod hists
         for label, sep in zip(['test', 'train'], [30, 15]):
             original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-	    if band=="all":
+            if band=="all":
                 files = original_files
-	    else:
+            else:
                 original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-	        files = []
-	        for original_file in original_files:
-		    exposure = original_file.split("/")[-2][2:]
-	            skip=False
-	            for index in range(1,63):
-		        try:
-		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-	        	    hdu = fits.open(band_test_file)
-		            break
-		        except:
-		            if index==62:
-			        skip = True
-		            else:
-		                pass
-	            if skip==True:
-		        continue
-	    	    try:
-			band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-			hdu_c = fits.open(band_test_file)
-			filter_name = hdu_c[1].data['band'][0][0]
-			print(filter_name)
-	    	    except:
-			try:
-    	    	    	    filter_name = hdu[3].data['band'][0]
-			except:
-		    	    continue
-    		    if filter_name==band:
-        	        files.append(original_file)
+                files = []
+                for original_file in original_files:
+                    exposure = original_file.split("/")[-2][2:]
+                    skip=False
+                    for index in range(1,63):
+                        try:
+                            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                            hdu = fits.open(band_test_file)
+                            break
+                        except:
+                            if index==62:
+                                skip = True
+                            else:
+                                pass
+                    if skip==True:
+                        continue
+                    try:
+                        band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                        hdu_c = fits.open(band_test_file)
+                        filter_name = hdu_c[1].data['band'][0][0]
+                        print(filter_name)
+                    except:
+                        try:
+                            filter_name = hdu[3].data['band'][0]
+                        except:
+                            continue
+                    if filter_name in band:
+                        files.append(original_file)
             if len(files) > 0:
                 print('computing twod stats for {0} for {1} psfs'.format(piff_name, len(files)))
                 file_out_base = '{0}/twodhists_{1}_{2}'.format(out_directory, label, piff_name)
@@ -567,83 +567,38 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
     if not skip_oned:
         for label in ['test', 'train']:
             original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-	    if band=="all":
+            if band=="all":
                 files = original_files
-	    else:
+            else:
                 original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-	        files = []
-	        for original_file in original_files:
-		    exposure = original_file.split("/")[-2][2:]
-	            skip=False
-	            for index in range(1,63):
-		        try:
-		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-	        	    hdu = fits.open(band_test_file)
-		            break
-		        except:
-		            if index==62:
-			        skip = True
-		            else:
-		                pass
-	            if skip==True:
-		        continue
-	    	    try:
-			band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-			hdu_c = fits.open(band_test_file)
-			filter_name = hdu_c[1].data['band'][0][0]
-			print(filter_name)
-	    	    except:
-			try:
-    	    	    	    filter_name = hdu[3].data['band'][0]
-			except:
-		    	    continue
-    		    if filter_name==band:
-        	        files.append(original_file)
-                if len(files) > 0:
-                    print('computing rho stats for {0} for {1} psfs'.format(piff_name, len(files)))
-                    if uv_coord:
-                        file_out = '{0}/rhouv_{1}_{2}.pdf'.format(out_directory, label, piff_name)
-
-                    else:
-                        file_out = '{0}/rhora_{1}_{2}.pdf'.format(out_directory, label, piff_name)
-                    run_rho(files, file_out, uv_coord)
-
-    if not skip_twod:
-        # twod hists
-        for label, sep in zip(['test', 'train'], [30, 15]):
-            original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-	    if band=="all":
-                files = original_files
-	    else:
-                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
-	        files = []
-	        for original_file in original_files:
-		    exposure = original_file.split("/")[-2][2:]
-	            skip=False
-	            for index in range(1,63):
-		        try:
-		            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-	        	    hdu = fits.open(band_test_file)
-		            break
-		        except:
-		            if index==62:
-			        skip = True
-		            else:
-		                pass
-	            if skip==True:
-		        continue
-	    	    try:
-			band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-			hdu_c = fits.open(band_test_file)
-			filter_name = hdu_c[1].data['band'][0][0]
-			print(filter_name)
-	    	    except:
-			try:
-    	    	    	    filter_name = hdu[3].data['band'][0]
-			except:
-		    	    continue
-    		    if filter_name==band:
-        	        files.append(original_file)
+                files = []
+                for original_file in original_files:
+                    exposure = original_file.split("/")[-2][2:]
+                    skip=False
+                    for index in range(1,63):
+                        try:
+                            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                            hdu = fits.open(band_test_file)
+                            break
+                        except:
+                            if index==62:
+                                skip = True
+                            else:
+                                pass
+                    if skip==True:
+                        continue
+                    try:
+                        band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                        hdu_c = fits.open(band_test_file)
+                        filter_name = hdu_c[1].data['band'][0][0]
+                        print(filter_name)
+                    except:
+                        try:
+                            filter_name = hdu[3].data['band'][0]
+                        except:
+                            continue
+                    if filter_name in band:
+                        files.append(original_file)
             if len(files) > 0:
                 # make plotdict
                 for key in plotdict:

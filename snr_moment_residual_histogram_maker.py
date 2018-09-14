@@ -21,24 +21,24 @@ from piff.util import hsm_error, hsm_higher_order, measure_snr
 
 def make_pngs(directory, label, information):
 
-    fig, axss = plt.subplots(nrows=3, ncols=3, figsize=(3 * 3, 3 * 3), squeeze=False)
+    fig, axss = plt.subplots(nrows=3, ncols=3, figsize=(4 * 4, 4 * 4), squeeze=False)
     # left column gets the Y coordinate label
     for axs in axss:
-	for ax in axs:
-	    ax.set(xlabel='snr', ylabel='average moment')
+        for ax in axs:
+            ax.set(xlabel='snr', ylabel='average moment')
 
     moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]
     for i in range(0,3):
-	for j in range(0,3):
-	    if i==2 and j>0:
-		pass
-	    else:
-		index = i*3 + j
-        	axss[i][j].scatter(information[0], information[index+1], label="data")
-        	axss[i][j].scatter(information[0], information[index+8], label="model")
-        	axss[i][j].scatter(information[0], information[index+15], label="difference")
-        	axss[i][j].set_title(moments[index])
-		axss[i][j].legend()
+        for j in range(0,3):
+            if i==2 and j>0:
+                pass
+            else:
+                index = i*3 + j
+                axss[i][j].scatter(information[0], information[index+1], label="data")
+                axss[i][j].scatter(information[0], information[index+8], label="model")
+                axss[i][j].scatter(information[0], information[index+15], label="difference")
+                axss[i][j].set_title(moments[index])
+                axss[i][j].legend()
     plt.tight_layout()
     fig.savefig("{0}/{1}_{2}_across_snrs.png".format(directory, label, psf_type))
 

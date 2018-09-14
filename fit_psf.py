@@ -70,8 +70,8 @@ def load_star_images(stars, config, logger=None):
         loaded_stars += ccd_loaded_stars
 
     for loaded_star_i, loaded_star in enumerate(loaded_stars):
-	measured_snr = measure_snr(loaded_star)
-	loaded_star.data.weight = loaded_star.data.weight * (loaded_star.data.properties['snr'] / measured_snr) ** 2
+        measured_snr = measure_snr(loaded_star)
+        loaded_star.data.weight = loaded_star.data.weight * (loaded_star.data.properties['snr'] / measured_snr) ** 2
 
     return loaded_stars
 
@@ -260,11 +260,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 
         # piffify
         logger.info('Fitting PSF')
-	if is_optatmo:
-            #psf.fit(train_stars, wcs, pointing, core_directory=core_directory, exposure=exposure, logger=logger)
-            psf.fit(train_stars, wcs, pointing, logger=logger)	
-	else:
-            psf.fit(train_stars, wcs, pointing, logger=logger)	
+        psf.fit(train_stars, wcs, pointing, logger=logger)	
         logger.info('Fitted PSF!')
 
         # fit atmosphere parameters
@@ -412,7 +408,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 
         for stars, label in zip([psf.stars, test_stars], ['train', 'test']):
             # get shapes
-	    model_stars = psf.drawStarList(stars)
+            model_stars = psf.drawStarList(stars)
             shapes = measure_star_shape(stars, model_stars, logger=logger)
             # save shapes
             shapes.to_hdf('{0}/shapes_{1}_{2}.h5'.format(directory, label, piff_name), 'data')
@@ -449,12 +445,6 @@ if __name__ == '__main__':
     parser.add_argument('--meanify_file_path', action='store', dest='meanify_file_path',
                         default='',
                         help='path to meanify file. If not specified, or if not using optatmo, then ignored')
-    #parser.add_argument('--exposure')
-    #parser.add_argument('--core_directory')
     options = parser.parse_args()
-    #exposure = options.exposure
-    #core_directory = options.core_directory
     kwargs = vars(options)
-    #del kwargs['exposure']
-    #del kwargs['core_directory']
     fit_psf(**kwargs)

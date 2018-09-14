@@ -30,6 +30,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
     else:
         psf_files = run_config['psf_optics_files'] + run_config['psf_other_files']
     psf_dir = run_config['psf_dir']  # where we load the psf files
+    source_directory = psf_dir
     directory = run_config['directory']  # where we save files
 
     # get list of expids
@@ -37,41 +38,66 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
 
     nrun = 0
     for expid in expids:
-	exposure = str(expid)
-	if band=="all":
-	    pass
-	else:
-	    skip=False
-	    for index in range(1,63):
-		try:
-		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
-	    	    hdu = fits.open(band_test_file)
-		    break
-		except:
-		    if index==62:
-			skip = True
-		    else:
-		        pass
-	    if skip==True:
-		continue
-	    try:
-		band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-		hdu_c = fits.open(band_test_file)
-		filter_name = hdu_c[1].data['band'][0][0]
-		print(filter_name)
-	    except:
-		try:
-    	    	    filter_name = hdu[3].data['band'][0]
-		except:
-		    continue
-    	    if filter_name==band:
+        exposure = str(expid)
+        if band=="all":
+            skip=False
+            for index in range(1,63):
+                try:
+                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                    hdu = fits.open(band_test_file)
+                    break
+                except:
+                    if index==62:
+                        skip = True
+                    else:
+                        pass
+            if skip==True:
+                continue
+            try:
+                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                hdu_c = fits.open(band_test_file)
+                filter_name = hdu_c[1].data['band'][0][0]
+                print(filter_name)
+            except:
+                try:
+                    filter_name = hdu[3].data['band'][0]
+                except:
+                    continue
+        else:
+            skip=False
+            for index in range(1,63):
+                try:
+                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                    hdu = fits.open(band_test_file)
+                    break
+                except:
+                    if index==62:
+                        skip = True
+                    else:
+                        pass
+            if skip==True:
+                continue
+            try:
+                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                hdu_c = fits.open(band_test_file)
+                filter_name = hdu_c[1].data['band'][0][0]
+                print(filter_name)
+            except:
+                try:
+                    filter_name = hdu[3].data['band'][0]
+                except:
+                    continue
+            if filter_name in band:
                 pass
-	    else:
-		continue
+            else:
+                continue
         for psf_file in psf_files:
             psf_name = psf_file.split('.yaml')[0].split('/')[-1]
             if meanify:
-                meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, band)
+                if bands_meanified_together=="True":
+                    meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, band)
+                else:
+                    meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, filter_name)                    
                 if not os.path.exists(meanify_file_path):
                     continue
 
@@ -93,45 +119,45 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             config['input']['wcs']['exp'] = expid
             # and I also messed up the ccd splitting
             config['input']['wcs']['ccdnum']['str'] = "image_file_name.split('_')[-1].split('.fits')[0]"
-	    skip=False
-	    for index in range(1,63):
-		try:
-		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(psf_dir, exposure, index)
-	    	    hdu = fits.open(band_test_file)
-		    break
-		except:
-		    if index==62:
-			skip = True
-		    else:
-		        pass
-	    if skip==True:
-		break
-	    try:
-		band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-		hdu_c = fits.open(band_test_file)
-		filter_name = hdu_c[1].data['band'][0][0]
-		print(filter_name)
-	    except:
-		try:
-    	    	    filter_name = hdu[3].data['band'][0]
-		except:
-		    continue
-	    if config['psf']['type'] == 'OptAtmo':
-           	# look up band information
+            skip=False
+            for index in range(1,63):
+                try:
+                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                    hdu = fits.open(band_test_file)
+                    break
+                except:
+                    if index==62:
+                        skip = True
+                    else:
+                        pass
+            if skip==True:
+                break
+            try:
+                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                hdu_c = fits.open(band_test_file)
+                filter_name = hdu_c[1].data['band'][0][0]
+                print(filter_name)
+            except:
+                try:
+                    filter_name = hdu[3].data['band'][0]
+                except:
+                    continue
+            if config['psf']['type'] == 'OptAtmo':
+           	    # look up band information
 
-	        # modify config band information
-		if filter_name == "u":
-	            config['psf']['optical_psf_kwargs']['lam'] = 387.6
-		if filter_name == "g":
-	            config['psf']['optical_psf_kwargs']['lam'] = 484.2
-		if filter_name == "r":
-	            config['psf']['optical_psf_kwargs']['lam'] = 643.9
-		if filter_name == "i":
-	            config['psf']['optical_psf_kwargs']['lam'] = 782.1
-		if filter_name == "z":
-	            config['psf']['optical_psf_kwargs']['lam'] = 917.2
-		if filter_name == "Y":
-	            config['psf']['optical_psf_kwargs']['lam'] = 987.8
+                # modify config band information
+                if filter_name == "u":
+                    config['psf']['optical_psf_kwargs']['lam'] = 387.6
+                if filter_name == "g":
+                    config['psf']['optical_psf_kwargs']['lam'] = 484.2
+                if filter_name == "r":
+                    config['psf']['optical_psf_kwargs']['lam'] = 643.9
+                if filter_name == "i":
+                    config['psf']['optical_psf_kwargs']['lam'] = 782.1
+                if filter_name == "z":
+                    config['psf']['optical_psf_kwargs']['lam'] = 917.2
+                if filter_name == "Y":
+                    config['psf']['optical_psf_kwargs']['lam'] = 987.8
 
             if print_log:
                 config['verbose'] = 3
@@ -145,8 +171,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 os.makedirs(job_directory)
             save_config(config, job_directory + '/{0}.yaml'.format(psf_name))
 
-	    source_directory = psf_dir
-	    np.save("{0}/source_directory_name.npy".format(directory), np.array([source_directory]))
+            np.save("{0}/source_directory_name.npy".format(directory), np.array([source_directory]))
             # create command
             command = [
                        'python',
@@ -249,9 +274,12 @@ if __name__ == '__main__':
                         default='config.yaml',
                         help='Run config to load up and do')
     parser.add_argument('--band')
+    parser.add_argument('--bands_meanified_together')
     options = parser.parse_args()
     band = options.band
+    bands_meanified_together = options.bands_meanified_together   
     kwargs = vars(options)
     del kwargs['band']
+    del kwargs['bands_meanified_together']
     print("hello")
     call_fit_psf(**kwargs)

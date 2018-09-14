@@ -35,37 +35,37 @@ def make_call():
     original_exposures = glob.glob("{0}/*".format(source_directory))
     original_exposures = [original_exposure.split("/")[-1] for original_exposure in original_exposures]
     if band=="all":
-	exposures = original_exposures
+        exposures = original_exposures
     else:
-	exposures = []
-	for original_exposure in original_exposures:
-	    skip=False
-	    for index in range(1,63):
-		try:
-		    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, original_exposure, index)
-		    hdu = fits.open(band_test_file)
-		    break
-		except:
-		    if index==62:
-			skip = True
-		    else:
-		        pass
-	    if skip==True:
-		continue
-	    try:
-		band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-		hdu_c = fits.open(band_test_file)
-		filter_name = hdu_c[1].data['band'][0][0]
-		print(filter_name)
-	    except:
-		try:
-    	    	    filter_name = hdu[3].data['band'][0]
-		except:
-		    continue
-    	    if filter_name==band:
+        exposures = []
+        for original_exposure in original_exposures:
+            skip=False
+            for index in range(1,63):
+                try:
+                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, original_exposure, index)
+                    hdu = fits.open(band_test_file)
+                    break
+                except:
+                    if index==62:
+                        skip = True
+                    else:
+                        pass
+            if skip==True:
+                continue
+            try:
+                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
+                hdu_c = fits.open(band_test_file)
+                filter_name = hdu_c[1].data['band'][0][0]
+                print(filter_name)
+            except:
+                try:
+                    filter_name = hdu[3].data['band'][0]
+                except:
+                    continue
+            if filter_name in band:
                 exposures.append(original_exposure)  
-	graph_directory = graph_directory + "/snr_moment_residual_histograms_just_for_filter_{0}".format(band)
-	os.system("mkdir {0}".format(graph_directory))
+        graph_directory = graph_directory + "/snr_moment_residual_histograms_just_for_filter_{0}".format(band)
+        os.system("mkdir {0}".format(graph_directory))
 
     data_final_e0 = []
     model_final_e0 = []
@@ -97,7 +97,7 @@ def make_call():
 
     for exposure_i, exposure in enumerate(exposures):
         try:
-    	    # for example, you could have psf_type="optatmo_const_gpvonkarman_meanified"
+            # for example, you could have psf_type="optatmo_const_gpvonkarman_meanified"
             data_final_e0.append(np.load("{0}/test_{1}_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[1])
             model_final_e0.append(np.load("{0}/test_{1}_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[8])        
             difference_final_e0.append(np.load("{0}/test_{1}_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[15])                

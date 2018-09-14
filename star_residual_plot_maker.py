@@ -26,28 +26,28 @@ def make_pngs(directory, label, plot_information, radial_information):
     fig, axss = plt.subplots(nrows=4, ncols=4, figsize=(4 * 4, 4 * 4), squeeze=False)
     # left column gets the Y coordinate label
     for i in range(0,4):
-            axss[i][0].imshow(plot_information[i*3+0], vmin=np.percentile(plot_information[i*3+0], q=2),vmax=np.percentile(plot_information[i*3+0], q=98), cmap=plt.cm.RdBu_r)
-	    if i==0:
-                axss[i][0].set_title("difference for all snr levels")
-	    else:
-                axss[i][0].set_title("difference for snr_level {0}".format(i-1))
-            axss[i][1].imshow(plot_information[i*3+1], vmin=np.percentile(plot_information[i*3+0], q=2),vmax=np.percentile(plot_information[i*3+0], q=98), cmap=plt.cm.RdBu_r)
-	    if i==0:
-                axss[i][1].set_title("difference for all snr levels")
-	    else:
-                axss[i][1].set_title("difference for snr_level {0}".format(i-1))
-            axss[i][2].imshow(plot_information[i*3+2], vmin=-0.005,vmax=0.005, cmap=plt.cm.RdBu_r)
-	    if i==0:
-                axss[i][2].set_title("difference for all snr levels")
-	    else:
-                axss[i][2].set_title("difference for snr_level {0}".format(i-1))
-            axss[i][3].scatter(radial_information[i*6+0], radial_information[i*6+1], label="Data")
-            axss[i][3].scatter(radial_information[i*6+2], radial_information[i*6+3], label="Model")
-            axss[i][3].scatter(radial_information[i*6+4], radial_information[i*6+5], label="Difference")
-	    if i==0:
-                axss[i][3].set_title("radial for all snr levels")
-	    else:
-                axss[i][3].set_title("radial for snr_level {0}".format(i-1))
+        axss[i][0].imshow(plot_information[i*3+0], vmin=np.percentile(plot_information[i*3+0], q=2),vmax=np.percentile(plot_information[i*3+0], q=98), cmap=plt.cm.RdBu_r)
+        if i==0:
+            axss[i][0].set_title("data for all snr levels")
+        else:
+            axss[i][0].set_title("data for snr_level {0}".format(i-1))
+        axss[i][1].imshow(plot_information[i*3+1], vmin=np.percentile(plot_information[i*3+0], q=2),vmax=np.percentile(plot_information[i*3+0], q=98), cmap=plt.cm.RdBu_r)
+        if i==0:
+            axss[i][1].set_title("model for all snr levels")
+        else:
+            axss[i][1].set_title("model for snr_level {0}".format(i-1))
+        axss[i][2].imshow(plot_information[i*3+2], vmin=-0.005,vmax=0.005, cmap=plt.cm.RdBu_r)
+        if i==0:
+            axss[i][2].set_title("difference for all snr levels")
+        else:
+            axss[i][2].set_title("difference for snr_level {0}".format(i-1))
+        axss[i][3].scatter(radial_information[i*6+0], radial_information[i*6+1], label="Data")
+        axss[i][3].scatter(radial_information[i*6+2], radial_information[i*6+3], label="Model")
+        axss[i][3].scatter(radial_information[i*6+4], radial_information[i*6+5], label="Difference")
+        if i==0:
+            axss[i][3].set_title("radial for all snr levels")
+        else:
+            axss[i][3].set_title("radial for snr_level {0}".format(i-1))
     plt.tight_layout()
     fig.savefig("{0}/{1}_{2}_star_residuals.png".format(directory, label, psf_type))
 
@@ -151,11 +151,11 @@ def make_star_residual_plots():
 
     is_optatmo=True
     if psf_type.split("_")[0]!="optatmo":
-	is_optatmo=False
+        is_optatmo=False
     print(is_optatmo)
 
     for star_test in stars_test:
-	star_test.fit.params = None
+        star_test.fit.params = None
 
     if is_optatmo==True:
         params = psf.getParamsList(stars_test)
@@ -163,32 +163,32 @@ def make_star_residual_plots():
         stars_test_fitted = psf.drawStarList(pre_drawn_stars)
     else:
         #pre_drawn_stars = psf.drawStarList(stars_test)
-	#plt.figure()
-	#plt.imshow(stars_test[0].image.array)
+        #plt.figure()
+        #plt.imshow(stars_test[0].image.array)
         #plt.savefig('{0}/dummy_data_star.png'.format(directory))
-	#print("finished making dummy star")
-	#plt.figure()
-	#plt.imshow(pre_drawn_stars[0].image.array)
+        #print("finished making dummy star")
+        #plt.figure()
+        #plt.imshow(pre_drawn_stars[0].image.array)
         #plt.savefig('{0}/dummy_model_star.png'.format(directory))
-	#print("finished making dummy star")
+        #print("finished making dummy star")
         pre_drawn_stars = [fit_star_alternate(star_test, psf) for star_test in stars_test]
         stars_test_fitted = psf.drawStarList(pre_drawn_stars)
-	#plt.figure()
-	#plt.imshow(pre_drawn_stars[0].image.array)
+        #plt.figure()
+        #plt.imshow(pre_drawn_stars[0].image.array)
         #plt.savefig('{0}/dummy_model_star.png'.format(directory))
-	#print("finished making dummy star")	 
+        #print("finished making dummy star")	 
 
     delete_list = []
     for star_i, star in enumerate(stars_test):
         if np.sum(stars_test[star_i].image.array)>2.0*np.sum(stars_test_fitted[star_i].image.array):
-	    if is_optatmo==True:
+            if is_optatmo==True:
                 delete_list.append(star_i)    
 
     stars_test = np.delete(stars_test, delete_list)
     stars_test_fitted = np.delete(stars_test_fitted, delete_list)
 
     for star_train in stars_train:
-	star_train.fit.params = None
+        star_train.fit.params = None
 
     if is_optatmo==True:
         params = psf.getParamsList(stars_train)
@@ -203,7 +203,7 @@ def make_star_residual_plots():
     delete_list = []
     for star_i, star in enumerate(stars_train):
         if np.sum(stars_train[star_i].image.array)>2.0*np.sum(stars_train_fitted[star_i].image.array):
-	    if is_optatmo==True:
+            if is_optatmo==True:
                 delete_list.append(star_i)   
 
     stars_train = np.delete(stars_train, delete_list)
@@ -345,7 +345,7 @@ def make_star_residual_plots():
             stars_test_fitted_copy = stars_test_fitted_snr_level_2   
 
 
-	#try:
+        #try:
         star_plots = np.array([star_test.image.array for star_test in stars_test_copy])
         norm = np.array([star_test.image.array.sum() for star_test in stars_test_copy])
         norm_blown_up = norm[:, np.newaxis, np.newaxis]
@@ -356,20 +356,20 @@ def make_star_residual_plots():
         plt.imshow(test_real_average_plot, vmin=np.percentile(test_real_average_plot, q=2),vmax=np.percentile(test_real_average_plot, q=98), cmap=plt.cm.RdBu_r)
         plt.colorbar()
         plt.title('Average Data, Test Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/test_data_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", test_real_average_plot)
+        np.save("{0}/test_data_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", test_real_average_plot)
         plt.savefig('{0}/stars_test_data_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
 
         star_plots = np.array([star_test_fitted.image.array for star_test_fitted in stars_test_fitted_copy])
         norm = np.array([star_test.image.array.sum() for star_test in stars_test_copy])
         norm_blown_up = norm[:, np.newaxis, np.newaxis]
-    	star_plots = star_plots / norm_blown_up
+        star_plots = star_plots / norm_blown_up
         test_fitted_average_plot = np.mean(star_plots, axis=0)
         plt.figure()
         plot_information[(l+1)*3+1] = test_fitted_average_plot
         plt.imshow(test_fitted_average_plot, vmin=np.percentile(test_real_average_plot, q=2),vmax=np.percentile(test_real_average_plot, q=98), cmap=plt.cm.RdBu_r)
         plt.colorbar()
         plt.title('Average Model, Test Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/test_model_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", test_fitted_average_plot)
+        np.save("{0}/test_model_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", test_fitted_average_plot)
         plt.savefig('{0}/stars_test_model_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
 
         star_plots = np.array([stars_test_copy[index].image.array-stars_test_fitted_copy[index].image.array for index in range(0,len(stars_test_copy))])
@@ -379,11 +379,11 @@ def make_star_residual_plots():
         test_difference_average_plot = np.mean(star_plots, axis=0)
         plt.figure()
         #plt.imshow(test_difference_average_plot, vmin=np.percentile(test_difference_average_plot, q=2),vmax=np.percentile(test_difference_average_plot, q=98), cmap=plt.cm.RdBu_r)
-	plot_information[(l+1)*3+2] = test_difference_average_plot
+        plot_information[(l+1)*3+2] = test_difference_average_plot
         plt.imshow(test_difference_average_plot, vmin=-0.005,vmax=0.005, cmap=plt.cm.RdBu_r)
         plt.colorbar()
         plt.title('Average Difference, Test Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/test_difference_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", test_difference_average_plot)
+        np.save("{0}/test_difference_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", test_difference_average_plot)
         plt.savefig('{0}/stars_test_difference_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
 
         x_test_real, y_test_real = convert_two_d_plot_to_radial_plot(test_real_average_plot)
@@ -402,15 +402,15 @@ def make_star_residual_plots():
         plt.scatter(x_test_difference,y_test_difference, label="Difference")
         plt.legend()
         plt.title('Average Data, Model, and Difference for Test Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/x_test_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_test_real)
-	np.save("{0}/y_test_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_test_real)
-	np.save("{0}/x_test_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_test_fitted)
-	np.save("{0}/y_test_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_test_fitted)
-	np.save("{0}/x_test_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_test_difference)
-	np.save("{0}/y_test_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_test_difference)
+        np.save("{0}/x_test_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_test_real)
+        np.save("{0}/y_test_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_test_real)
+        np.save("{0}/x_test_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_test_fitted)
+        np.save("{0}/y_test_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_test_fitted)
+        np.save("{0}/x_test_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_test_difference)
+        np.save("{0}/y_test_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_test_difference)
         plt.savefig('{0}/stars_test_radial_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
-	#except:
-	#    pass
+        #except:
+        #    pass
         make_pngs(directory=directory, label="test", plot_information=plot_information, radial_information=radial_information)
 
 
@@ -545,7 +545,7 @@ def make_star_residual_plots():
             stars_train_fitted_copy = stars_train_fitted_snr_level_2   
 
 
-	#try:
+        #try:
         star_plots = np.array([star_train.image.array for star_train in stars_train_copy])
         norm = np.array([star_train.image.array.sum() for star_train in stars_train_copy])
         norm_blown_up = norm[:, np.newaxis, np.newaxis]
@@ -556,20 +556,20 @@ def make_star_residual_plots():
         plt.imshow(train_real_average_plot, vmin=np.percentile(train_real_average_plot, q=2),vmax=np.percentile(train_real_average_plot, q=98), cmap=plt.cm.RdBu_r)
         plt.colorbar()
         plt.title('Average Data, Train Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/train_data_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", train_real_average_plot)
+        np.save("{0}/train_data_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", train_real_average_plot)
         plt.savefig('{0}/stars_train_data_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
 
         star_plots = np.array([star_train_fitted.image.array for star_train_fitted in stars_train_fitted_copy])
         norm = np.array([star_train.image.array.sum() for star_train in stars_train_copy])
         norm_blown_up = norm[:, np.newaxis, np.newaxis]
-    	star_plots = star_plots / norm_blown_up
+        star_plots = star_plots / norm_blown_up
         train_fitted_average_plot = np.mean(star_plots, axis=0)
         plt.figure()
         plot_information[(l+1)*3+1] = train_fitted_average_plot
         plt.imshow(train_fitted_average_plot, vmin=np.percentile(train_real_average_plot, q=2),vmax=np.percentile(train_real_average_plot, q=98), cmap=plt.cm.RdBu_r)
         plt.colorbar()
         plt.title('Average Model, Train Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/train_model_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", train_fitted_average_plot)
+        np.save("{0}/train_model_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", train_fitted_average_plot)
         plt.savefig('{0}/stars_train_model_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
 
         star_plots = np.array([stars_train_copy[index].image.array-stars_train_fitted_copy[index].image.array for index in range(0,len(stars_train_copy))])
@@ -579,11 +579,11 @@ def make_star_residual_plots():
         train_difference_average_plot = np.mean(star_plots, axis=0)
         plt.figure()
         #plt.imshow(train_difference_average_plot, vmin=np.percentile(train_difference_average_plot, q=2),vmax=np.percentile(train_difference_average_plot, q=98), cmap=plt.cm.RdBu_r)
-	plot_information[(l+1)*3+2] = train_difference_average_plot
+        plot_information[(l+1)*3+2] = train_difference_average_plot
         plt.imshow(train_difference_average_plot, vmin=-0.005,vmax=0.005, cmap=plt.cm.RdBu_r)
         plt.colorbar()
         plt.title('Average Difference, Train Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/train_difference_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", train_difference_average_plot)
+        np.save("{0}/train_difference_average_plot_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", train_difference_average_plot)
         plt.savefig('{0}/stars_train_difference_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
 
         x_train_real, y_train_real = convert_two_d_plot_to_radial_plot(train_real_average_plot)
@@ -602,15 +602,15 @@ def make_star_residual_plots():
         plt.scatter(x_train_difference,y_train_difference, label="Difference")
         plt.legend()
         plt.title('Average Data, Model, and Difference for Train Stars normalized by data star flux for snr level {0}'.format(l))
-	np.save("{0}/x_train_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_train_real)
-	np.save("{0}/y_train_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_train_real)
-	np.save("{0}/x_train_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_train_fitted)
-	np.save("{0}/y_train_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_train_fitted)
-	np.save("{0}/x_train_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_train_difference)
-	np.save("{0}/y_train_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_train_difference)
+        np.save("{0}/x_train_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_train_real)
+        np.save("{0}/y_train_data_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_train_real)
+        np.save("{0}/x_train_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_train_fitted)
+        np.save("{0}/y_train_model_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_train_fitted)
+        np.save("{0}/x_train_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", x_train_difference)
+        np.save("{0}/y_train_difference_snr_level_{1}_{2}_".format(graph_values_directory, l, exposure) + psf_type + ".npy", y_train_difference)
         plt.savefig('{0}/stars_train_radial_snr_level_{1}_'.format(directory, l) + psf_type + '.png')
-	#except:
-	#    pass
+        #except:
+        #    pass
         make_pngs(directory=directory, label="train", plot_information=plot_information, radial_information=radial_information)
 
 

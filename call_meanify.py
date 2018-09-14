@@ -60,38 +60,38 @@ def call_meanify(run_config_path, overwrite, n):
 
         # glob over expids
         logger.info('Globbing')
-	if band=="all":
+        if band=="all":
             files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
-	else:
+        else:
             original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
-	    files = []
-	    for original_file in original_files:
-		exposure = original_file.split("/")[-2][2:]
-	        skip=False
-	        for index in range(1,63):
-		    try:
-		        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-	        	hdu = fits.open(band_test_file)
-		        break
-		    except:
-		        if index==62:
-			    skip = True
-		        else:
-		            pass
-	        if skip==True:
-		    continue
-	        try:
-		    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-		    hdu_c = fits.open(band_test_file)
-		    filter_name = hdu_c[1].data['band'][0][0]
-		    print(filter_name)
-	        except:
-		    try:
-    	    	        filter_name = hdu[3].data['band'][0]
-		    except:
-		        continue
-    		if filter_name==band:
-        	    files.append(original_file)
+            files = []
+            for original_file in original_files:
+                exposure = original_file.split("/")[-2][2:]
+                skip=False
+                for index in range(1,63):
+                    try:
+                        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+                        hdu = fits.open(band_test_file)
+                        break
+                    except:
+                        if index==62:
+                            skip = True
+                        else:
+                            pass
+                if skip==True:
+                    continue
+                try:
+                    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+                    hdu_c = fits.open(band_test_file)
+                    filter_name = hdu_c[1].data['band'][0][0]
+                    print(filter_name)
+                except:
+                    try:
+                        filter_name = hdu[3].data['band'][0]
+                    except:
+                        continue
+                if filter_name in band:
+                    files.append(original_file)
         if n > 0:
             files = files[:n]
         logger.info('Meanifying')
@@ -99,38 +99,7 @@ def call_meanify(run_config_path, overwrite, n):
         config = meanify_config(files, average_file, meanify_params)
         piff.meanify(config, logger=logger)
 
-        # # make plots of meanify
-        # logger.info('Making plots')
 
-        # # load X0 y0
-        # n_neighbors=4
-        # average = fitsio.read(average_file)
-        # X0 = average['COORDS0'][0]
-        # y0 = average['PARAMS0'][0]
-
-        # neigh = KNeighborsRegressor(n_neighbors=n_neighbors)
-        # neigh.fit(X0, y0)
-        # y = neigh.predict(X0)
-        # keys = [['atmo_size', 'atmo_g1', 'atmo_g2']]
-        # shapes = {'u': X0[:, 0], 'v': X0[:, 1],
-        #           'atmo_size': y[:, 0],
-        #           'atmo_g1': y[:, 1], 'atmo_g2': y[:, 2]}
-        # keys_i = []
-        # for i in range(3, len(y[0])):
-        #     key = 'param_{0}'.format(i)
-        #     shapes[key] = y[:, i]
-        #     keys_i.append(key)
-        #     if len(keys_i) == 3:
-        #         keys.append(keys_i)
-        #         keys_i = []
-        # if len(keys_i) > 0:
-        #     keys_i += [keys_i[0]] * (3 - len(keys_i))
-        #     keys.append(keys_i)
-
-        # shapes = pd.DataFrame(shapes)
-
-        # fig, axs = plot_2dhist_shapes(shapes, keys, gridsize=500)
-        # fig.savefig('{0}/meanify_params_{1}.pdf'.format(directory, psf_name))
 
 if __name__ == '__main__':
     import argparse
