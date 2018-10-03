@@ -9,7 +9,7 @@ import os
 
 import piff
 
-def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_twod, skip_params):
+def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_twod, skip_params, band):
 
     run_config = piff.read_config(run_config_path)
     directory = run_config['directory']  # directory such that you can go glob(directory/*/psf.piff) and find piff files
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     parser.add_argument('--skip_params', action='store_true', dest='skip_params')
     parser.add_argument('--band')
     options = parser.parse_args()
-    band = options.band
+    #band = options.band
     kwargs = vars(options)
-    del kwargs['band']
+    #del kwargs['band']
     call_collect(**kwargs)

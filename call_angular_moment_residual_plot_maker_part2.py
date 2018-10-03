@@ -24,13 +24,62 @@ from matplotlib.figure import Figure
 
 
 
-def make_call():
+def find_filter_name_or_skip(source_directory, exposure):
+    filter_name_and_skip_dictionary = {}
+    filter_name_and_skip_dictionary['skip'] = False
+    for index in range(1,63):
+        try:
+            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+            print("first band_test_file: {0}".format(band_test_file))
+            hdu = fits.open(band_test_file)
+            print("hdu found!")
+            break
+        except:
+            print("failed to find hdu")
+            if index==62:
+                print("failed to find any hdu")
+                filter_name_and_skip_dictionary['skip'] = True
+                return filter_name_and_skip_dictionary
+            else:
+                pass
+    try:
+        band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
+        print("second band_test_file: {0}".format(band_test_file))
+        hdu_c = fits.open(band_test_file)
+        print("hdu_c found!")
+        filter_name = hdu_c[2].data['band'][0][0]
+        print(filter_name)
+        filter_name_and_skip_dictionary['filter_name'] = filter_name
+    except:
+        print("failed when dealing with hdu_c somehow")
+        try:
+            print("preparing to get filter_name from hdu")
+            filter_name = hdu[3].data['band'][0]
+            print(filter_name)
+            filter_name_and_skip_dictionary['filter_name'] = filter_name
+        except:
+            print("failed_everything")
+            filter_name_and_skip_dictionary['skip'] = True
+            return filter_name_and_skip_dictionary
+    try:
+        hdu.close()
+    except:
+        pass
+    try:
+        hdu_c.close()
+    except:
+        pass
+    print("finished closing files")    
+    return filter_name_and_skip_dictionary
+    
+
+def make_call(psf_type, band):
     core_directory = os.path.realpath(__file__)
     program_name = core_directory.split("/")[-1]
     core_directory = core_directory.split("/{0}".format(program_name))[0]
     graph_values_directory = "{0}/graph_values_npy_storage".format(core_directory)
     graph_directory = "{0}/multi_exposure_graphs/{1}_angular_moment_residual_plots_averaged_across_exposures".format(core_directory, psf_type)
-    terminal_command = os.system("mkdir {0}".format(graph_directory))
+    os.system("mkdir {0}".format(graph_directory))
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
     original_exposures = glob.glob("{0}/*".format(source_directory))
     original_exposures = [original_exposure.split("/")[-1] for original_exposure in original_exposures]
@@ -39,188 +88,74 @@ def make_call():
     else:
         exposures = []
         for original_exposure in original_exposures:
-            skip=False
-            for index in range(1,63):
-                try:
-                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, original_exposure, index)
-                    hdu = fits.open(band_test_file)
-                    break
-                except:
-                    if index==62:
-                        skip = True
-                    else:
-                        pass
-            if skip==True:
+            print("original_exposure: {0}".format(original_exposure))
+            filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=original_exposure)
+            print("filter_name_and_skip_dictionary: {0}".format(filter_name_and_skip_dictionary))
+            if filter_name_and_skip_dictionary['skip'] == True:
+                print("skip is True!")
                 continue
-            try:
-                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, original_exposure)
-                hdu_c = fits.open(band_test_file)
-                filter_name = hdu_c[1].data['band'][0][0]
-                print(filter_name)
-            except:
-                try:
-                    filter_name = hdu[3].data['band'][0]
-                except:
-                    continue
+            else:
+                print("skip is False!")
+                filter_name = filter_name_and_skip_dictionary['filter_name'] 
+                print("filter_name: {0}".format(filter_name))                  
             if filter_name in band:
+                print("filter_name in band!")
                 exposures.append(original_exposure)  
         graph_directory = graph_directory + "/angular_moment_residual_plots_just_for_filter_{0}".format(band)
         os.system("mkdir {0}".format(graph_directory))
 
+    print("preparing to enter label for loop")
     for label in ["test", "train"]:
+        print("entered label for loop")
 
-        data_final_e0 = []
-        model_final_e0 = []
-        difference_final_e0 = []
+        moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]
+        kinds = ["data_", "model_", "d"]
+        kind_final_moment_dictionary = {}
+        
+        print("preparing to fill up kind_final_moment_dictionary")
+        for moment in moments:
+            for kind in kinds:   
+                kind_final_moment_dictionary['{0}{1}'.format(kind,moment)] = []
+        print("finished filling up kind_final_moment_dictionary")
+        print("kind_final_moment_dictionary: {0}".format(kind_final_moment_dictionary))
 
-        data_final_e1 = []
-        model_final_e1 = []
-        difference_final_e1 = []
-
-        data_final_e2 = []
-        model_final_e2 = []
-        difference_final_e2 = []
-
-        data_final_zeta1 = []
-        model_final_zeta1 = []
-        difference_final_zeta1 = []
-
-        data_final_zeta2 = []
-        model_final_zeta2 = []
-        difference_final_zeta2 = []
-
-        data_final_delta1 = []
-        model_final_delta1 = []
-        difference_final_delta1 = []
-
-        data_final_delta2 = []
-        model_final_delta2 = []
-        difference_final_delta2 = []
-
+        print("preparing to run through exposures")
         for exposure_i, exposure in enumerate(exposures):
             try:
-                # for example, you could have psf_type="optatmo_const_gpvonkarman_meanified"
-                data_final_e0.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[1])
-                model_final_e0.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[8])        
-                difference_final_e0.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[15])                
-
-                data_final_e1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[2])
-                model_final_e1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[9])        
-                difference_final_e1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[16])              
-
-                data_final_e2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[3])
-                model_final_e2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[10])        
-                difference_final_e2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[17])  
-
-
-
-                data_final_zeta1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[4])
-                model_final_zeta1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[11])        
-                difference_final_zeta1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[18])                
-
-                data_final_zeta2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[5])
-                model_final_zeta2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[12])        
-                difference_final_zeta2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[19])              
-
-                data_final_delta1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[6])
-                model_final_delta1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[13])        
-                difference_final_delta1.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[20])        
-
-                data_final_delta2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[7])
-                model_final_delta2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[14])        
-                difference_final_delta2.append(np.load("{0}/test_{1}_angular_information_{2}.npy".format(graph_values_directory, psf_type, exposure))[21])    
+                print("exposure_i, exposure: {0}, {1}".format(exposure_i, exposure))
+                for m, moment in enumerate(moments):
+                    print("m, moment: {0}, {1}".format(m, moment))
+                    for k, kind in enumerate(kinds):
+                        print("k, kind: {0}, {1}".format(k, kind))
+                        # for example, you could have psf_type="optatmo_const_gpvonkarman_meanified"
+                        kind_final_moment_dictionary['{0}{1}'.format(kind,moment)].append(np.load("{0}/{1}_{2}_angular_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure))[m+k*len(moments)])   
+                        print("just appended")
+                        print(kind_final_moment_dictionary['{0}{1}'.format(kind,moment)])  
             except:
                 pass
 
-        final_angles = np.array([5.0,15.0,25.0,35.0,45.0,55.0,65.0,75.0,85.0,95.0,105.0,115.0,125.0,135.0,145.0,155.0,165.0,175.0,185.0,195.0,205.0,215.0,225.0,235.0,245.0,255.0,265.0,275.0,285.0,295.0,305.0,315.0,325.0,335.0,345.0,355.0])
-        print(data_final_e0) 
-        data_final_e0 = np.nanmean(np.array(data_final_e0),axis=0)
-        model_final_e0 = np.nanmean(np.array(model_final_e0),axis=0)
-        difference_final_e0 = np.nanmean(np.array(difference_final_e0),axis=0)
+        final_angles = np.arange(5, 356, 10, dtype=np.float)
+        print(kind_final_moment_dictionary['data_e0']) 
 
-        data_final_e1 = np.nanmean(np.array(data_final_e1),axis=0)
-        model_final_e1 = np.nanmean(np.array(model_final_e1),axis=0)
-        difference_final_e1 = np.nanmean(np.array(difference_final_e1),axis=0)
-
-        data_final_e2 = np.nanmean(np.array(data_final_e2),axis=0)
-        model_final_e2 = np.nanmean(np.array(model_final_e2),axis=0)
-        difference_final_e2 = np.nanmean(np.array(difference_final_e2),axis=0)
-
-        data_final_zeta1 = np.nanmean(np.array(data_final_zeta1),axis=0)
-        model_final_zeta1 = np.nanmean(np.array(model_final_zeta1),axis=0)
-        difference_final_zeta1 = np.nanmean(np.array(difference_final_zeta1),axis=0)
-
-        data_final_zeta2 = np.nanmean(np.array(data_final_zeta2),axis=0)
-        model_final_zeta2 = np.nanmean(np.array(model_final_zeta2),axis=0)
-        difference_final_zeta2 = np.nanmean(np.array(difference_final_zeta2),axis=0)
-
-        data_final_delta1 = np.nanmean(np.array(data_final_delta1),axis=0)
-        model_final_delta1 = np.nanmean(np.array(model_final_delta1),axis=0)
-        difference_final_delta1 = np.nanmean(np.array(difference_final_delta1),axis=0)
-
-        data_final_delta2 = np.nanmean(np.array(data_final_delta2),axis=0)
-        model_final_delta2 = np.nanmean(np.array(model_final_delta2),axis=0)
-        difference_final_delta2 = np.nanmean(np.array(difference_final_delta2),axis=0)  
+        print("preparing to take mean")
+        for entry in kind_final_moment_dictionary:
+            kind_final_moment_dictionary[entry] = np.nanmean(np.array(kind_final_moment_dictionary[entry]),axis=0) 
+        print("finished taking mean")
 
         print(final_angles)
-        print(data_final_e0)    
-
-        plt.figure()
-        plt.scatter(final_snrs,data_final_e0, label="data")
-        plt.scatter(final_snrs,model_final_e0, label="model")
-        plt.scatter(final_snrs,difference_final_e0, label="difference")
-        plt.title("e0 across snrs")
-        plt.legend()
-        plt.savefig("{0}/{1}_e0_across_snrs.png".format(graph_directory, label))
-
-        plt.figure()
-        plt.scatter(final_snrs,data_final_e1, label="data")
-        plt.scatter(final_snrs,model_final_e1, label="model")
-        plt.scatter(final_snrs,difference_final_e1, label="difference")
-        plt.title("e1 across snrs")
-        plt.legend()
-        plt.savefig("{0}/{1}_e1_across_snrs.png".format(graph_directory, label))
-
-        plt.figure()
-        plt.scatter(final_snrs,data_final_e2, label="data")
-        plt.scatter(final_snrs,model_final_e2, label="model")
-        plt.scatter(final_snrs,difference_final_e2, label="difference")
-        plt.title("e2 across snrs")
-        plt.legend()
-        plt.savefig("{0}/{1}_e2_across_snrs.png".format(graph_directory, label))    
+        print(kind_final_moment_dictionary['data_e0'])    
 
 
-        plt.figure()
-        plt.scatter(final_snrs,data_final_zeta1, label="data")
-        plt.scatter(final_snrs,model_final_zeta1, label="model")
-        plt.scatter(final_snrs,difference_final_zeta1, label="difference")
-        plt.title("zeta1 across snrs")
-        plt.legend()
-        plt.savefig("{0}/{1}_zeta1_across_snrs.png".format(graph_directory, label))
-
-        plt.figure()
-        plt.scatter(final_snrs,data_final_zeta2, label="data")
-        plt.scatter(final_snrs,model_final_zeta2, label="model")
-        plt.scatter(final_snrs,difference_final_zeta2, label="difference")
-        plt.title("zeta2 across snrs")
-        plt.legend()
-        plt.savefig("{0}/{1}_zeta2_across_snrs.png".format(graph_directory, label))
-
-        plt.figure()
-        plt.scatter(final_snrs,data_final_delta1, label="data")
-        plt.scatter(final_snrs,model_final_delta1, label="model")
-        plt.scatter(final_snrs,difference_final_delta1, label="difference")
-        plt.title("delta1 across snrs")
-        plt.legend()
-        plt.savefig("{0}/{1}_delta1_across_snrs.png".format(graph_directory, label))
-
-        plt.figure()
-        plt.scatter(final_snrs,data_final_delta2, label="data")
-        plt.scatter(final_snrs,model_final_delta2, label="model")
-        plt.scatter(final_snrs,difference_final_delta2, label="difference")
-        plt.title("delta2 across snrs")
-        plt.legend()
-        plt.savefig("{0}/{1}_delta2_across_snrs.png".format(graph_directory, label))  
+        print("preparing to enter final for loop for making graphs for various moments")
+        for moment in moments:
+            print("entered final for loop for making graphs for various moments")
+            plt.figure()
+            plt.scatter(final_angles,kind_final_moment_dictionary['data_{0}'.format(moment)], label="data")
+            plt.scatter(final_angles,kind_final_moment_dictionary['model_{0}'.format(moment)], label="model")
+            plt.scatter(final_angles,kind_final_moment_dictionary['d{0}'.format(moment)], label="difference")
+            plt.title("{0} across angles".format(moment))
+            plt.legend()
+            plt.savefig("{0}/{1}_{2}_across_angles.png".format(graph_directory, label, moment))
 
 
 
@@ -232,7 +167,4 @@ if __name__ == '__main__':
     options = parser.parse_args()
     psf_type = options.psf_type
     band = options.band
-    kwargs = vars(options)
-    del kwargs['psf_type']
-    del kwargs['band']
-    make_call()
+    make_call(psf_type=psf_type, band=band)

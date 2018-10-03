@@ -15,6 +15,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 import pandas as pd
 import fitsio
+from call_angular_moment_residual_plot_maker_part2 import find_filter_name_or_skip
 
 def convert_momentshapes_to_shapes(momentshapes):
     shapes = []
@@ -413,7 +414,7 @@ def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
             C[vi, ui] += value
             C.mask[vi, ui] = 0
 
-def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=False, skip_oned=False, skip_twod=False):
+def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=False, skip_oned=False, skip_twod=False, band):
     core_directory = os.path.realpath(__file__)
     program_name = core_directory.split("/")[-1]
     core_directory = core_directory.split("/{0}".format(program_name))[0]
@@ -436,29 +437,11 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
             files = []
             for original_file in original_files:
                 exposure = original_file.split("/")[-2][2:]
-                skip=False
-                for index in range(1,63):
-                    try:
-                        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                        hdu = fits.open(band_test_file)
-                        break
-                    except:
-                        if index==62:
-                            skip = True
-                        else:
-                            pass
-                if skip==True:
+                filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=exposure)
+                if filter_name_and_skip_dictionary['skip'] == True:
                     continue
-                try:
-                    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                    hdu_c = fits.open(band_test_file)
-                    filter_name = hdu_c[1].data['band'][0][0]
-                    print(filter_name)
-                except:
-                    try:
-                        filter_name = hdu[3].data['band'][0]
-                    except:
-                        continue
+                else:
+                    filter_name = filter_name_and_skip_dictionary['filter_name']                 
                 if filter_name in band:
                     files.append(original_file)
         if len(files) > 0:
@@ -481,29 +464,11 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
                     files = []
                     for original_file in original_files:
                         exposure = original_file.split("/")[-2][2:]
-                        skip=False
-                        for index in range(1,63):
-                            try:
-                                band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                                hdu = fits.open(band_test_file)
-                                break
-                            except:
-                                if index==62:
-                                    skip = True
-                                else:
-                                    pass
-                        if skip==True:
+                        filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=exposure)
+                        if filter_name_and_skip_dictionary['skip'] == True:
                             continue
-                        try:
-                            band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                            hdu_c = fits.open(band_test_file)
-                            filter_name = hdu_c[1].data['band'][0][0]
-                            print(filter_name)
-                        except:
-                            try:
-                                filter_name = hdu[3].data['band'][0]
-                            except:
-                                continue
+                        else:
+                            filter_name = filter_name_and_skip_dictionary['filter_name']
                         if filter_name in band:
                             files.append(original_file)
                 if len(files) > 0:
@@ -525,30 +490,12 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
                 original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
                 files = []
                 for original_file in original_files:
-                    exposure = original_file.split("/")[-2][2:]
-                    skip=False
-                    for index in range(1,63):
-                        try:
-                            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                            hdu = fits.open(band_test_file)
-                            break
-                        except:
-                            if index==62:
-                                skip = True
-                            else:
-                                pass
-                    if skip==True:
+                    exposure = original_file.split("/")[-2][2:]      
+                    filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=exposure)
+                    if filter_name_and_skip_dictionary['skip'] == True:
                         continue
-                    try:
-                        band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                        hdu_c = fits.open(band_test_file)
-                        filter_name = hdu_c[1].data['band'][0][0]
-                        print(filter_name)
-                    except:
-                        try:
-                            filter_name = hdu[3].data['band'][0]
-                        except:
-                            continue
+                    else:
+                        filter_name = filter_name_and_skip_dictionary['filter_name']                               
                     if filter_name in band:
                         files.append(original_file)
             if len(files) > 0:
@@ -574,29 +521,11 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
                 files = []
                 for original_file in original_files:
                     exposure = original_file.split("/")[-2][2:]
-                    skip=False
-                    for index in range(1,63):
-                        try:
-                            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                            hdu = fits.open(band_test_file)
-                            break
-                        except:
-                            if index==62:
-                                skip = True
-                            else:
-                                pass
-                    if skip==True:
+                    filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=exposure)
+                    if filter_name_and_skip_dictionary['skip'] == True:
                         continue
-                    try:
-                        band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                        hdu_c = fits.open(band_test_file)
-                        filter_name = hdu_c[1].data['band'][0][0]
-                        print(filter_name)
-                    except:
-                        try:
-                            filter_name = hdu[3].data['band'][0]
-                        except:
-                            continue
+                    else:
+                        filter_name = filter_name_and_skip_dictionary['filter_name']
                     if filter_name in band:
                         files.append(original_file)
             if len(files) > 0:
@@ -623,7 +552,5 @@ if __name__ == '__main__':
     parser.add_argument('--skip_twod', action='store_true', dest='skip_twod')
     parser.add_argument('--band')
     options = parser.parse_args()
-    band = options.band
     kwargs = vars(options)
-    del kwargs['band']
     collect(**kwargs)

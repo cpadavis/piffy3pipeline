@@ -22,6 +22,7 @@ import numpy as np
 from astropy.io import fits
 
 from fit_psf import plot_2dhist_shapes
+from call_angular_moment_residual_plot_maker_part2 import find_filter_name_or_skip
 
 def meanify_config(files, average_file, meanify_params):
     config = {'output': {'file_name': files},
@@ -32,7 +33,7 @@ def meanify_config(files, average_file, meanify_params):
 
     return config
 
-def call_meanify(run_config_path, overwrite, n):
+def call_meanify(run_config_path, overwrite, n, band):
 
     core_directory = os.path.realpath(__file__)
     program_name = core_directory.split("/")[-1]
@@ -67,29 +68,11 @@ def call_meanify(run_config_path, overwrite, n):
             files = []
             for original_file in original_files:
                 exposure = original_file.split("/")[-2][2:]
-                skip=False
-                for index in range(1,63):
-                    try:
-                        band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                        hdu = fits.open(band_test_file)
-                        break
-                    except:
-                        if index==62:
-                            skip = True
-                        else:
-                            pass
-                if skip==True:
+                filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=exposure)
+                if filter_name_and_skip_dictionary['skip'] == True:
                     continue
-                try:
-                    band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                    hdu_c = fits.open(band_test_file)
-                    filter_name = hdu_c[1].data['band'][0][0]
-                    print(filter_name)
-                except:
-                    try:
-                        filter_name = hdu[3].data['band'][0]
-                    except:
-                        continue
+                else:
+                    filter_name = filter_name_and_skip_dictionary['filter_name']                     
                 if filter_name in band:
                     files.append(original_file)
         if n > 0:
@@ -111,7 +94,5 @@ if __name__ == '__main__':
                         help='Run config to load up and do')
     parser.add_argument('--band')
     options = parser.parse_args()
-    band = options.band
     kwargs = vars(options)
-    del kwargs['band']
     call_meanify(**kwargs)

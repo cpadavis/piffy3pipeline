@@ -12,6 +12,7 @@ from astropy.io import fits
 import numpy as np
 
 import piff
+from call_angular_moment_residual_plot_maker_part2 import find_filter_name_or_skip
 
 def save_config(config, file_name):
     """Take a configuration dictionary and save to file
@@ -22,7 +23,7 @@ def save_config(config, file_name):
     with open(file_name, 'w') as f:
         f.write(yaml.dump(config, default_flow_style=False))
 
-def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only):
+def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_together):
 
     run_config = piff.read_config(run_config_path)
     if meanify or fit_interp_only:
@@ -40,53 +41,17 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
     for expid in expids:
         exposure = str(expid)
         if band=="all":
-            skip=False
-            for index in range(1,63):
-                try:
-                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                    hdu = fits.open(band_test_file)
-                    break
-                except:
-                    if index==62:
-                        skip = True
-                    else:
-                        pass
-            if skip==True:
+            filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=exposure)
+            if filter_name_and_skip_dictionary['skip'] == True:
                 continue
-            try:
-                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                hdu_c = fits.open(band_test_file)
-                filter_name = hdu_c[1].data['band'][0][0]
-                print(filter_name)
-            except:
-                try:
-                    filter_name = hdu[3].data['band'][0]
-                except:
-                    continue
+            else:
+                filter_name = filter_name_and_skip_dictionary['filter_name']                    
         else:
-            skip=False
-            for index in range(1,63):
-                try:
-                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                    hdu = fits.open(band_test_file)
-                    break
-                except:
-                    if index==62:
-                        skip = True
-                    else:
-                        pass
-            if skip==True:
+            filter_name_and_skip_dictionary = find_filter_name_or_skip(source_directory=source_directory, exposure=exposure)
+            if filter_name_and_skip_dictionary['skip'] == True:
                 continue
-            try:
-                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                hdu_c = fits.open(band_test_file)
-                filter_name = hdu_c[1].data['band'][0][0]
-                print(filter_name)
-            except:
-                try:
-                    filter_name = hdu[3].data['band'][0]
-                except:
-                    continue
+            else:
+                filter_name = filter_name_and_skip_dictionary['filter_name']                
             if filter_name in band:
                 pass
             else:
@@ -119,29 +84,6 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             config['input']['wcs']['exp'] = expid
             # and I also messed up the ccd splitting
             config['input']['wcs']['ccdnum']['str'] = "image_file_name.split('_')[-1].split('.fits')[0]"
-            skip=False
-            for index in range(1,63):
-                try:
-                    band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
-                    hdu = fits.open(band_test_file)
-                    break
-                except:
-                    if index==62:
-                        skip = True
-                    else:
-                        pass
-            if skip==True:
-                break
-            try:
-                band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
-                hdu_c = fits.open(band_test_file)
-                filter_name = hdu_c[1].data['band'][0][0]
-                print(filter_name)
-            except:
-                try:
-                    filter_name = hdu[3].data['band'][0]
-                except:
-                    continue
             if config['psf']['type'] == 'OptAtmo':
            	    # look up band information
 
@@ -276,10 +218,6 @@ if __name__ == '__main__':
     parser.add_argument('--band')
     parser.add_argument('--bands_meanified_together')
     options = parser.parse_args()
-    band = options.band
-    bands_meanified_together = options.bands_meanified_together   
     kwargs = vars(options)
-    del kwargs['band']
-    del kwargs['bands_meanified_together']
     print("hello")
     call_fit_psf(**kwargs)
