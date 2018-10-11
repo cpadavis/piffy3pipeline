@@ -171,6 +171,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
 
                 bsub_command = ['bsub',
                                 '-J', job_name,
+                                '-R', 'rhel60',                                
                                 '-o', logfile]
                 if time > 0:
                     bsub_command += ['-W', str(time)]
