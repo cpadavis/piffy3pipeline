@@ -34,8 +34,16 @@ def make_call(band, psf_type):
     graph_directory = "{0}/multi_exposure_graphs/{1}_star_residual_plots_averaged_across_exposures".format(core_directory, psf_type)
     os.system("mkdir {0}".format(graph_directory))
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
-    original_exposures = glob.glob("{0}/*".format(source_directory))
-    original_exposures = [original_exposure.split("/")[-1] for original_exposure in original_exposures]
+    very_original_exposures = glob.glob("{0}/*".format(source_directory))
+    very_original_exposures = [very_original_exposure.split("/")[-1] for very_original_exposure in very_original_exposures]
+    try:
+        acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
+        original_exposures = []
+        for very_original_exposure in very_original_exposures:
+            if very_original_exposure in acceptable_exposures:
+                original_exposures.append(very_original_exposure)
+    except:
+        original_exposures = very_original_exposures
     if band=="all":
         exposures = original_exposures
     else:

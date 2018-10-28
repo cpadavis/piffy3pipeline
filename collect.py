@@ -429,7 +429,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 
     # params
     if do_optatmo:
-        original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+        very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+        try:
+            acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
+            original_files = []
+            for very_original_file in very_original_files:
+                very_original_exposure = very_original_file.split("/")[-2][2:]
+                if very_original_exposure in acceptable_exposures:
+                    original_files.append(very_original_file)
+        except:
+            original_files = very_original_files
         if band=="all":
             files = original_files
         else:
@@ -456,7 +465,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
         for uv_coord in [True, False]:
             # for label in ['test']:
             for label in ['test', 'train']:
-                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+                very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+                try:
+                    acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
+                    original_files = []
+                    for very_original_file in very_original_files:
+                        very_original_exposure = very_original_file.split("/")[-2][2:]
+                        if very_original_exposure in acceptable_exposures:
+                            original_files.append(very_original_file)
+                except:
+                    original_files = very_original_files
                 if band=="all":
                     files = original_files
                 else:
@@ -483,7 +501,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
     if not skip_twod:
         # twod hists
         for label, sep in zip(['test', 'train'], [30, 15]):
-            original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+            very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+            try:
+                acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
+                original_files = []
+                for very_original_file in very_original_files:
+                    very_original_exposure = very_original_file.split("/")[-2][2:]
+                    if very_original_exposure in acceptable_exposures:
+                        original_files.append(very_original_file)
+            except:
+                original_files = very_original_files
             if band=="all":
                 files = original_files
             else:
@@ -513,7 +540,16 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 
     if not skip_oned:
         for label in ['test', 'train']:
-            original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
+            very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+            try:
+                acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
+                original_files = []
+                for very_original_file in very_original_files:
+                    very_original_exposure = very_original_file.split("/")[-2][2:]
+                    if very_original_exposure in acceptable_exposures:
+                        original_files.append(very_original_file)
+            except:
+                original_files = very_original_files
             if band=="all":
                 files = original_files
             else:
