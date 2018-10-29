@@ -17,41 +17,62 @@ from scipy.stats import mode
 import fitsio
 
 def main(i=-1):
-    piff_dir = '/nfs/slac/g/ki/ki19/des/cpd/y3_piff'
-    out_dir = piff_dir + '/exposures_v29_grizY'
-    cat_dir = piff_dir + '/exp_info_y3a1-v29_grizY'
-    # cat_dir = piff_dir + '/exp_info_y3a1-v23'
-    possible_exps = sorted(glob.glob(cat_dir + '/*'))
-    print(len(possible_exps))
-    expnums = []
-    for d in possible_exps:
-        try:
-            di = int(d.split('/')[-1])
-            expnums.append(di)
-        except ValueError:
-            # not a d
-            print('Skipping {0}'.format(d))
-    expnums = np.array(expnums)
-    exposures_ccd = fitsio.read('{0}/exposures-ccds-Y3A1_COADD.fits'.format(piff_dir))
-    astro_zones = fitsio.read('{0}/astro/which_zone.fits'.format(piff_dir))
+    try:
+        #piff_dir = '/nfs/slac/g/ki/ki19/des/cpd/y3_piff'
+        piff_dir = '/nfs/slac/g/ki/ki19/deuce/AEGIS/leget/piff'
+        piff_dir_astro = '/nfs/slac/g/ki/ki19/des/cpd/y3_piff'
+        out_dir = piff_dir + '/exposures_v29_grizY'
+        cat_dir = piff_dir + '/exp_info_y3a1-v29_grizY'
+        # cat_dir = piff_dir + '/exp_info_y3a1-v23'
+        possible_exps = sorted(glob.glob(cat_dir + '/*'))
+        print(len(possible_exps))
+        expnums = []
+        for d in possible_exps:
+            try:
+                di = int(d.split('/')[-1])
+                expnums.append(di)
+            except ValueError:
+                # not a d
+                print('Skipping {0}'.format(d))
+        expnums = np.array(expnums)
+        exposures_ccd = fitsio.read('{0}/exposures-ccds-Y3A1_COADD.fits'.format(piff_dir))
+        astro_zones = fitsio.read('{0}/astro/which_zone.fits'.format(piff_dir_astro))
 
-    if i >= 0:
-        expnums = [expnums[i]]
-    for expnum in expnums:
-        exposures_ccd_expnum = exposures_ccd[exposures_ccd['expnum'] == expnum]
+        if i >= 0:
+            expnums = [expnums[i]]
+        for expnum in expnums:
+            exposures_ccd_expnum = exposures_ccd[exposures_ccd['expnum'] == expnum]
 
-        # ccds
-        ccds = exposures_ccd_expnum['ccdnum']
+            # ccds
+            ccds = exposures_ccd_expnum['ccdnum']
 
-        # paths
-        paths = exposures_ccd_expnum['path']
+            # paths
+            paths = exposures_ccd_expnum['path']
 
-        # zonenum. Decide which zone for the exposure based on which zone occures most often.
-        zonenum = mode(astro_zones[astro_zones['expnum'] == expnum]['zone'])[0][0]
+            # zonenum. Decide which zone for the exposure based on which zone occures most often.
+            zonenum = mode(astro_zones[astro_zones['expnum'] == expnum]['zone'])[0][0]
 
-        cat_file = '{0}/{1}/exp_psf_cat_{1}.fits'.format(cat_dir, expnum)
+            cat_file = '{0}/{1}/exp_psf_cat_{1}.fits'.format(cat_dir, expnum)
 
-        do_exposure(out_dir, cat_file, exposures_ccd_expnum, expnum, ccds, paths, zonenum)
+            do_exposure(out_dir, cat_file, exposures_ccd_expnum, expnum, ccds, paths, zonenum)
+        success = True
+    except:
+        success = False
+    exp = '{0}/{1}'.format(out_dir, expnum) 
+    temp_file_1 = glob.glob(exp+'/*Tmp*')
+    temp_file_2 = glob.glob(exp+'/D*')
+    nccd = len(glob.glob(exp+'/psf_im_*_*.fits.fz'))
+ 
+    success &= (len(temp_file_1) == 0)
+    success &= (len(temp_file_2) == 0)
+
+    if not success:
+        os.system('rm '+exp+'/*Tmp*')
+        os.system('rm '+exp+'/D*')
+
+    success &= (nccd != 0)
+
+    return success
 
 def do_exposure(outdir, cat_file, exposures_ccd_expnum, expnum, ccds, paths, zonenum):
     # output directory
@@ -217,6 +238,7 @@ def wget(url_base, path, wdir, file):
         cmd = 'wget %s -O %s'%(url, full_file)
         for attempt in range(1,nattempts+1):
             print('%s  (attempt %d)'%(cmd, attempt))
+            print('For PF: ', cmd)
             run_with_timeout(cmd, 300)
             if os.path.exists(full_file):
                 break
@@ -262,6 +284,7 @@ def unpack_file(file_name, img_file):
     cmd = 'funpack -O {outf} {inf}'.format(outf=img_file, inf=file_name)
     print(cmd)
     for itry in range(5):
+        print('For PF: ', cmd)
         run_with_timeout(cmd, 120)
         if os.path.lexists(img_file): break
         print('%s was not properly made.  Retrying.'%img_file)
@@ -290,6 +313,7 @@ def pack_file(file_name):
     cmd = 'fpack {inf}'.format(inf=file_name)
     print(cmd)
     for itry in range(5):
+        print('For PF: ', cmd)
         run_with_timeout(cmd, 120)
         if os.path.lexists(img_file): break
         print('%s was not properly made.  Retrying.'%img_file)
@@ -306,5 +330,10 @@ if __name__ == '__main__':
                         type=int, default=-1,
                         help='Which job')
     args = parser.parse_args()
-    main(args.i)
+    
+    success = False 
+    ntry=1
+    while not success and ntry<5:
+        success = main(args.i)
+        ntry += 1
 
