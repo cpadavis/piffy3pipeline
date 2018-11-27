@@ -20,7 +20,13 @@ def save_config(config, file_name):
     with open(file_name, 'w') as f:
         f.write(yaml.dump(config, default_flow_style=False))
 
-def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only):
+def call_fit_psf(run_config_path, bsub, qsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only):
+
+    if qsub and bsub:
+        ValueError('qsub and bsub cannot be set at the same time, qsub @ ccin2p3 and bsub @ slac') 
+
+    if qsub: 
+        os.system('tar cvzf piffy3pipeline.tar.gz ../piffy3pipeline/')
 
     run_config = piff.read_config(run_config_path)
     if meanify or fit_interp_only:
@@ -140,7 +146,11 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 command = bsub_command + command
 
             print(' '.join(command))
-            if bsub and call:
+            if qsub and call: 
+                logfile = '{0}/bsub_fit_psf_{1}.log'.format(job_directory, psf_name)
+                logfile_err = '{0}/bsub_fit_psf_{1}_err.log'.format(job_directory, psf_name)
+                launch_job_to_ccin2p3(command, logfile, logfile_err, job_name)
+            elif bsub and call:
                 print(job_name)
                 subprocess.call(command)
             elif call:
@@ -148,16 +158,42 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 print(job_name)
                 # call manually if no bsub
                 subprocess.call(command)
-
+            
         nrun += 1
         if nmax > 0 and nrun >= nmax:
             break
+
+def launch_job_to_ccin2p3(command, logfile, logfile_err, job_name):
+
+    rep_output = '~/piffy3pipeline'
+
+    fichier=open('%s.sh'%(job_name),'w')
+    fichier.write('#!/bin/bash \n')
+    fichier.write('\n')
+    fichier.write('home=/afs/in2p3.fr/home/l/leget/piffy3pipeline \n')
+    fichier.write('\n')
+    fichier.write('cp ${home}/piffy3pipeline.tar.gz . \n')
+    fichier.write('\n')
+    fichier.write('tar xzvf piffy3pipeline.tar.gz \n')
+    fichier.write('\n')
+    fichier.write('cd piffy3pipeline/ \n')
+    fichier.write('\n')
+    fichier.write(' '.join(command))
+
+    fichier.close()
+
+    to_submit = 'qsub -P P_lsst -q long -o %s -e %s -l s_vmem=16G -l s_cpu=30:00:00 -l sps=1 %s.sh'%((logfile, logfile_err, job_name))
+    os.system(to_submit)
+    os.system('rm %s.sh*'%(job_name))
+
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--bsub', action='store_true', dest='bsub',
                         help='Use bsub')
+    parser.add_argument('--qsub', action='store_true', dest='qsub',
+                        help='Use qsub')
     parser.add_argument('--check', action='store_true', dest='check',
                         help='When using bsub, do check if job submitted')
     parser.add_argument('--call', action='store_true', dest='call',
