@@ -102,6 +102,7 @@ def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_t
 
             bsub_command = ['bsub',
                             '-J', job_name,
+                            '-R', 'rhel60',  
                             '-o', logfile]
             if time > 0:
                 bsub_command += ['-W', str(time)]

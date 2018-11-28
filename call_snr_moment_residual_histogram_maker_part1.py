@@ -38,7 +38,7 @@ def make_call(psf_type):
     for exposure_i, exposure in enumerate(exposures):
         try:
             # for example, you could have psf_type="optatmo_const_gpvonkarman_meanified"
-            terminal_command = "bsub -o {0}/log_file_dump/{1}_call_snr_moment_residual_histogram_maker_{2}.txt python {0}/snr_moment_residual_histogram_maker.py --core_directory {0} --psf_type {1} --exposure {2}".format(core_directory, psf_type, exposure)
+            terminal_command = "bsub -R rhel60 -o {0}/log_file_dump/{1}_call_snr_moment_residual_histogram_maker_{2}.txt python {0}/snr_moment_residual_histogram_maker.py --core_directory {0} --psf_type {1} --exposure {2}".format(core_directory, psf_type, exposure)
             os.system(terminal_command)
             #subprocess.call(terminal_command.split(" "))
             print(terminal_command)

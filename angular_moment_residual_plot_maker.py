@@ -17,7 +17,7 @@ import galsim
 import piff
 import sys
 
-from piff.util import hsm_error, hsm_higher_order, measure_snr
+from piff.util import hsm_error, measure_snr
 
 def make_pngs(directory, label, information, moments):
 

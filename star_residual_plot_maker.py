@@ -18,7 +18,7 @@ import sys
 
 #from piff.stats import Stats
 #from piff.star import Star, StarFit
-from piff.util import hsm_error, hsm_higher_order, measure_snr
+from piff.util import hsm_error, measure_snr
 #from piff.star_stats import fit_star_alternate, _fit_residual_alternate
 
 def make_pngs(directory, label, plot_information, radial_information):
@@ -146,7 +146,7 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
     
     
     for label in ["test", "train"]:
-        stars_label = np.load("{0}/stars_{1}.npy".format(directory, label))
+        stars_label = np.load("{0}/stars_{1}_psf_{2}.npy".format(directory, label, psf_type))
         for star_label in stars_label:
             star_label.fit.params = None
         if is_optatmo==True:
@@ -195,7 +195,7 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
             plt.colorbar()
             plt.title('Average {0}, T{1} Stars normalized by data star flux'.format(capital_kind_names[slk], label[1:]))
             np.save("{0}/{1}_{2}_average_plot_{3}_".format(graph_values_directory, label, kind_names[slk], exposure) + psf_type + ".npy",label_kind_average_plot)
-            plt.savefig('{0}/stars_{1}_{2}_'.format(directory, label, kind_names[slk]) + psf_type + '.png')
+            #plt.savefig('{0}/stars_{1}_{2}_'.format(directory, label, kind_names[slk]) + psf_type + '.png')
             
         plt.figure()
         for k, label_kind_average_plot in enumerate(label_kind_average_plots):
@@ -207,7 +207,7 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
             np.save("{0}/y_{1}_{2}_{3}_".format(graph_values_directory, label, kind_names[k], exposure) + psf_type + ".npy", y_label_kind)          
         plt.legend()
         plt.title('Average Data, Model, and Difference for T{0} Stars normalized by data star flux'.format(label[1:]))
-        plt.savefig('{0}/stars_{1}_radial_'.format(directory, label) + psf_type + '.png')
+        #plt.savefig('{0}/stars_{1}_radial_'.format(directory, label) + psf_type + '.png')
 
 
         stars_label_kind_snr_level_l_dictionary = {}
@@ -264,7 +264,7 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
                 plt.colorbar()
                 plt.title('Average {0}, T{1} Stars normalized by data star flux for snr level {2}'.format(capital_kind_names[slk], label[1:], l))
                 np.save("{0}/{1}_{2}_average_plot_snr_level_{3}_{4}_".format(graph_values_directory, label, capital_kind_names[slk], l, exposure) + psf_type + ".npy", label_kind_average_plot)
-                plt.savefig('{0}/stars_{1}_{2}_snr_level_{3}_'.format(directory, label, kind_names[slk], l) + psf_type + '.png')                
+                #plt.savefig('{0}/stars_{1}_{2}_snr_level_{3}_'.format(directory, label, kind_names[slk], l) + psf_type + '.png')                
                                 
             plt.figure()
             for k, label_kind_average_plot in enumerate(label_kind_average_plots):
@@ -276,7 +276,7 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
                 np.save("{0}/y_{1}_{2}_snr_level_{3}_{4}".format(graph_values_directory, label, kind_names[k], l, exposure) + psf_type + ".npy", y_label_kind)          
             plt.legend()
             plt.title('Average Data, Model, and Difference for T{0} Stars normalized by data star flux for snr level {1}'.format(label[1:], l))
-            plt.savefig('{0}/stars_{1}_radial_snr_level_{2}_'.format(directory, label, l) + psf_type + '.png')
+            #plt.savefig('{0}/stars_{1}_radial_snr_level_{2}_'.format(directory, label, l) + psf_type + '.png')
 
 
         make_pngs(directory=directory, label=label, plot_information=plot_information, radial_information=radial_information)

@@ -15,7 +15,7 @@ import fitsio
 import galsim
 import piff
 
-from piff.util import hsm_error, hsm_higher_order, measure_snr
+from piff.util import hsm_error, hsm_third_moments, measure_snr
 
 def fit_interp(stars, config_interp, psf, logger):
     # init interp
@@ -84,9 +84,9 @@ def measure_star_shape(stars, model_stars, logger=None):
         star = stars[i]
         model_star = model_stars[i]
         # returns a pandas series
-        flux, u0, v0, e0, e1, e2, zeta1, zeta2, delta1, delta2 = hsm_higher_order(star)
+        flux, u0, v0, e0, e1, e2, zeta1, zeta2, delta1, delta2 = hsm_third_moments(star)
         flux, u0, v0, e0, e1, e2, sigma_flux, sigma_u0, sigma_v0, sigma_e0, sigma_e1, sigma_e2 = hsm_error(star, return_debug=False, return_error=True)
-        model_flux, model_u0, model_v0, model_e0, model_e1, model_e2, model_zeta1, model_zeta2, model_delta1, model_delta2 = hsm_higher_order(model_star)
+        model_flux, model_u0, model_v0, model_e0, model_e1, model_e2, model_zeta1, model_zeta2, model_delta1, model_delta2 = hsm_third_moments(model_star)
 
         properties = {key: star.data.properties[key] for key in ['chipnum', 'x', 'y', 'u', 'v', 'ra', 'dec']}
 
