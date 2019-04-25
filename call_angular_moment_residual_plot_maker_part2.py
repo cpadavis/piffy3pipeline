@@ -116,7 +116,7 @@ def make_call(psf_type, band):
     for label in ["test", "train"]:
         print("entered label for loop")
 
-        moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]
+        moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2", "orth4", "orth6", "orth8"]
         kinds = ["data_", "model_", "d"]
         kind_final_moment_dictionary = {}
         

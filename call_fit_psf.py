@@ -217,7 +217,7 @@ if __name__ == '__main__':
                         default='config.yaml',
                         help='Run config to load up and do')
     parser.add_argument('--band')
-    parser.add_argument('--bands_meanified_together')
+    parser.add_argument('--bands_meanified_together', default="True")
     options = parser.parse_args()
     kwargs = vars(options)
     print("hello")

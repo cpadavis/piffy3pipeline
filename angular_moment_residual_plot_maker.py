@@ -21,15 +21,15 @@ from piff.util import hsm_error, measure_snr
 
 def make_pngs(directory, label, information, moments):
 
-    fig, axss = plt.subplots(nrows=3, ncols=3, figsize=(4 * 4, 4 * 4), squeeze=False)
+    fig, axss = plt.subplots(nrows=4, ncols=3, figsize=(4 * 4, 4 * 4), squeeze=False)
     # left column gets the Y coordinate label
     for axs in axss:
         for ax in axs:
             ax.set(xlabel='angle', ylabel='average moment')
 
-    for i in range(0,3):
+    for i in range(0,4):
         for j in range(0,3):
-            if i==2 and j>0:
+            if i == 3 and j > 0:
                 pass
             else:
                 index = i*3 + j
@@ -56,7 +56,7 @@ def make_plots(exposure, core_directory, psf_type):
         angles = np.degrees(np.arctan2(v,u))
         angles[angles < 0.0] = angles[angles < 0.0] + 360.0
 
-        moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]
+        moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2", "orth4", "orth6", "orth8"]
         information = np.empty([3*len(moments),36])
         kinds = ["data_", "model_", "d"]
         for m, moment in enumerate(moments):

@@ -66,7 +66,7 @@ def self__plot_single(ax, rho, color, marker, offset=0.):
     # Add a single rho stat to the plot.
     meanr = rho.meanr * (1. + rho.bin_size * offset)
     xip = rho.xip
-    sig = np.sqrt(rho.varxi)
+    sig = np.sqrt(rho.varxip)
     ax.plot(meanr, xip, color=color)
     ax.plot(meanr, -xip, color=color, ls=':')
     ax.errorbar(meanr[xip>0], xip[xip>0], yerr=sig[xip>0], color=color, ls='', marker=marker)
@@ -414,7 +414,7 @@ def _add_twodhists(z, indx_u, indx_v, unique_indx, C):
             C[vi, ui] += value
             C.mask[vi, ui] = 0
 
-def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=False, skip_oned=False, skip_twod=False, band):
+def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=False, skip_oned=False, skip_twod=False, band="all"):
     core_directory = os.path.realpath(__file__)
     program_name = core_directory.split("/")[-1]
     core_directory = core_directory.split("/{0}".format(program_name))[0]
@@ -465,7 +465,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
         for uv_coord in [True, False]:
             # for label in ['test']:
             for label in ['test', 'train']:
-                very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+                very_original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
                 try:
                     acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
                     original_files = []
@@ -501,7 +501,7 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
     if not skip_twod:
         # twod hists
         for label, sep in zip(['test', 'train'], [30, 15]):
-            very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+            very_original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
             try:
                 acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
                 original_files = []
@@ -532,15 +532,18 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
 
     plotdict = {}
     for shape_key in ['data_e0', 'de0', 'data_e1', 'de1', 'data_e2', 'de2',
-                      'data_delta1', 'ddelta1', 'data_delta2', 'ddelta2',
                       'data_zeta1', 'dzeta1', 'data_zeta2', 'dzeta2',
+                      'data_delta1', 'ddelta1', 'data_delta2', 'ddelta2',
+                      'data_orth4', 'dorth4',
+                      'data_orth6', 'dorth6',
+                      'data_orth8', 'dorth8',
                       'atmo_size', 'atmo_g1', 'atmo_g2']:
         plotdict[shape_key] = {'key_x': 'data_flux', 'key_y': shape_key,
                                'bins_x': np.logspace(3, 7, 501), 'log_x': True}
 
     if not skip_oned:
         for label in ['test', 'train']:
-            very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
+            very_original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
             try:
                 acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
                 original_files = []

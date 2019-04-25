@@ -31,7 +31,7 @@ def make_call(band, psf_type):
     program_name = core_directory.split("/")[-1]
     core_directory = core_directory.split("/{0}".format(program_name))[0]
     graph_values_directory = core_directory + "/graph_values_npy_storage"
-    graph_directory = "{0}/multi_exposure_graphs/{1}_star_residual_plots_averaged_across_exposures".format(core_directory, psf_type)
+    graph_directory = "{0}/multi_exposure_graphs/{1}_star_residual_ccd_plots_averaged_across_exposures".format(core_directory, psf_type)
     os.system("mkdir {0}".format(graph_directory))
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
     very_original_exposures = glob.glob("{0}/*".format(source_directory))
@@ -56,7 +56,7 @@ def make_call(band, psf_type):
                 filter_name = filter_name_and_skip_dictionary['filter_name']       
             if filter_name in band:
                 exposures.append(original_exposure)  
-        graph_directory = graph_directory + "/star_residual_plots_just_for_filter_{0}".format(band)
+        graph_directory = graph_directory + "/star_residual_ccd_plots_just_for_filter_{0}".format(band)
         os.system("mkdir {0}".format(graph_directory))
 
     
@@ -114,13 +114,11 @@ def make_call(band, psf_type):
         plt.ylim(-0.005,0.005)
         plt.savefig('{0}/stars_{1}_radial_difference_'.format(graph_directory, label) + psf_type + '.png')
 
-        if label=="train":
-            break
 
 
-
-        for l in [0, 1, 2]:
+        for l in range(1,63):
             try:
+                skip = False
                 label_kind_average_plot_dictionary = {}
                 x_label_kind_dictionary = {}
                 y_label_kind_dictionary = {}
@@ -132,16 +130,21 @@ def make_call(band, psf_type):
                 for exposure_i, exposure in enumerate(exposures):
                     try:
                         for kind_name in kind_names:
-                            if not np.any(np.isnan(np.load("{0}/{1}_{2}_average_plot_snr_level_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))):
-                                label_kind_average_plot_dictionary[kind_name].append(np.load("{0}/{1}_{2}_average_plot_snr_level_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))
-                            if not np.any(np.isnan(np.load("{0}/x_{1}_{2}_snr_level_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))):
-                                x_label_kind_dictionary[kind_name].append(np.load("{0}/x_{1}_{2}_snr_level_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))                 
-                            if not np.any(np.isnan(np.load("{0}/y_{1}_{2}_snr_level_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))):
-                                y_label_kind_dictionary[kind_name].append(np.load("{0}/y_{1}_{2}_snr_level_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))
+                            if not np.any(np.isnan(np.load("{0}/{1}_{2}_average_plot_chipnum_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))):
+                                label_kind_average_plot_dictionary[kind_name].append(np.load("{0}/{1}_{2}_average_plot_chipnum_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))
+                            if not np.any(np.isnan(np.load("{0}/x_{1}_{2}_chipnum_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))):
+                                x_label_kind_dictionary[kind_name].append(np.load("{0}/x_{1}_{2}_chipnum_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))                 
+                            if not np.any(np.isnan(np.load("{0}/y_{1}_{2}_chipnum_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))):
+                                y_label_kind_dictionary[kind_name].append(np.load("{0}/y_{1}_{2}_chipnum_{3}_{4}_".format(graph_values_directory, label, kind_name, l, exposure) + psf_type + ".npy"))
                     except:
+                        print("failed to make per ccd graphs for chip {0}, exposure {1}".format(l, exposure))
                         pass
 
                 for k, kind_name in enumerate(kind_names):
+                    if len(label_kind_average_plot_dictionary[kind_name]) < 1:
+                        print("no graphable graphs for chip {0}".format(l))
+                        skip = True
+                        break
                     label_kind_average_plot_dictionary[kind_name] = np.nanmean(np.array(label_kind_average_plot_dictionary[kind_name]),axis=0)
                     x_label_kind_dictionary[kind_name] = np.nanmean(np.array(x_label_kind_dictionary[kind_name]),axis=0)
                     y_label_kind_dictionary[kind_name] = np.nanmean(np.array(y_label_kind_dictionary[kind_name]),axis=0)
@@ -153,24 +156,26 @@ def make_call(band, psf_type):
                     else:
                         plt.imshow(label_kind_average_plot_dictionary[kind_name], vmin=np.percentile(label_kind_average_plot_dictionary["data"], q=2),vmax=np.percentile(label_kind_average_plot_dictionary["data"], q=98), cmap=plt.cm.RdBu_r)
                     plt.colorbar()
-                    plt.title('Average {0}, T{1} Stars normalized by data star flux for snr level {2}'.format(capital_kind_names[k], label[1:], l))
-                    plt.savefig('{0}/stars_{1}_{2}_snr_level_{3}_'.format(graph_directory, label, kind_name, l) + psf_type + '.png')
+                    plt.title('Average {0}, T{1} Stars normalized by data star flux for chipnum {2}'.format(capital_kind_names[k], label[1:], l))
+                    plt.savefig('{0}/stars_{1}_{2}_chipnum_{3}_'.format(graph_directory, label, kind_name, l) + psf_type + '.png')
+                if skip == True:
+                    continue
 
                 plt.figure()
                 for k, kind_name in enumerate(kind_names):
                     if kind_name != "difference":
                         plt.scatter(x_label_kind_dictionary[kind_name], y_label_kind_dictionary[kind_name], label=capital_kind_names[k])
                 plt.legend()
-                plt.title('Average Data and Model for T{0} Stars normalized by data star flux for snr level {1}'.format(label[1:], l))
-                plt.savefig('{0}/stars_{1}_radial_data_and_model_snr_level_{2}_'.format(graph_directory, label, l) + psf_type + '.png')
+                plt.title('Average Data and Model for T{0} Stars normalized by data star flux for chipnum {1}'.format(label[1:], l))
+                plt.savefig('{0}/stars_{1}_radial_data_and_model_chipnum_{2}_'.format(graph_directory, label, l) + psf_type + '.png')
                 plt.figure()
                 for k, kind_name in enumerate(kind_names):
                     if kind_name == "difference":
                         plt.scatter(x_label_kind_dictionary[kind_name], y_label_kind_dictionary[kind_name], label=capital_kind_names[k])
                 plt.legend()
-                plt.title('Average Difference for T{0} Stars normalized by data star flux for snr level {1}'.format(label[1:], l))
+                plt.title('Average Difference for T{0} Stars normalized by data star flux for chipnum {1}'.format(label[1:], l))
                 plt.ylim(-0.005,0.005)
-                plt.savefig('{0}/stars_{1}_radial_difference_snr_level_{2}_'.format(graph_directory, label, l) + psf_type + '.png')
+                plt.savefig('{0}/stars_{1}_radial_difference_chipnum_{2}_'.format(graph_directory, label, l) + psf_type + '.png')
             except:
                 pass
 
