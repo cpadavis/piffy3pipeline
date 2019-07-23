@@ -30,7 +30,7 @@ def make_call(psf_type, band):
     program_name = core_directory.split("/")[-1]
     core_directory = core_directory.split("/{0}".format(program_name))[0]
     graph_values_directory = "{0}/graph_values_npy_storage".format(core_directory)
-    graph_directory = "{0}/multi_exposure_graphs/{1}_snr_moment_residual_graphs_averaged_across_exposures".format(core_directory, psf_type)
+    graph_directory = "{0}/multi_exposure_graphs/{1}_snr_moment_residual_plots_averaged_across_exposures".format(core_directory, psf_type)
     os.system("mkdir {0}".format(graph_directory))
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
     very_original_exposures = glob.glob("{0}/*".format(source_directory))
@@ -55,7 +55,7 @@ def make_call(psf_type, band):
                 filter_name = filter_name_and_skip_dictionary['filter_name']          
             if filter_name in band:
                 exposures.append(original_exposure)  
-        graph_directory = graph_directory + "/snr_moment_residual_graphs_just_for_filter_{0}".format(band)
+        graph_directory = graph_directory + "/snr_moment_residual_plots_just_for_filter_{0}".format(band)
         os.system("mkdir {0}".format(graph_directory))
 
     for label in ["test", "train"]: #here, aggregate angular moment residual graphs are made
