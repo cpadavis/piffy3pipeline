@@ -16,13 +16,10 @@ import galsim
 import piff
 import sys
 
-#from piff.stats import Stats
-#from piff.star import Star, StarFit
 from piff.util import hsm_error, measure_snr
-#from piff.star_stats import fit_star_alternate, _fit_residual_alternate
 
 def make_pngs(directory, label, plot_information, radial_information):
-
+    #This function graphs the stars' data, model, and difference images.
     fig, axss = plt.subplots(nrows=4, ncols=5, figsize=(4 * 4, 4 * 5), squeeze=False)
     # left column gets the Y coordinate label
     for i in range(0,4):
@@ -156,12 +153,27 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
         stars_label = np.load("{0}/stars_{1}_psf_{2}.npy".format(directory, label, psf_type))
         for star_label in stars_label:
             star_label.fit.params = None
+        early_delete_list = []    
+        pre_drawn_stars = []        
         if is_optatmo==True:
             params = psf.getParamsList(stars_label)
-            pre_drawn_stars = [psf.fit_model(star_label, param, vary_shape=False, estimated_errorbars_not_required=True)[0] for star_label, param in zip(stars_label, params)] 
+            for sl, param in zip(range(0,len(stars_label)), params):
+                star_label = stars_label[sl]
+                try:
+                    pre_drawn_star = psf.fit_model(star_label, param, vary_shape=False, estimated_errorbars_not_required=True)[0]
+                    pre_drawn_stars.append(pre_drawn_star)
+                except:
+                    early_delete_list.append(sl)
+            stars_label = np.delete(stars_label, early_delete_list)                    
             stars_label_fitted = psf.drawStarList(pre_drawn_stars)
         else:
-            pre_drawn_stars = [fit_star_alternate(star_label, psf) for star_label in stars_label]
+            for sl, star_label in enumerate(stars_label):
+                try:
+                    pre_drawn_star = fit_star_alternate(star_label, psf)
+                    pre_drawn_stars.append(pre_drawn_star)
+                except:
+                    early_delete_list.append(sl)
+            stars_label = np.delete(stars_label, early_delete_list)               
             stars_label_fitted = psf.drawStarList(pre_drawn_stars)
         delete_list = []
         for star_i, star in enumerate(stars_label):

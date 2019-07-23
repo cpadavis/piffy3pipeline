@@ -20,7 +20,7 @@ import sys
 from piff.util import hsm_error, measure_snr
 
 def make_pngs(directory, label, information, moments):
-
+    #This function graphs the moments' data, model, and difference values across various snrs. Note that these snrs are after rescaling down stars with snr > 100.
     fig, axss = plt.subplots(nrows=4, ncols=3, figsize=(4 * 4, 4 * 4), squeeze=False)
     # left column gets the Y coordinate label
     for axs in axss:
@@ -41,7 +41,7 @@ def make_pngs(directory, label, information, moments):
     plt.tight_layout()
     fig.savefig("{0}/{1}_{2}_across_snrs.png".format(directory, label, psf_type))
 
-def make_histograms(exposure, core_directory, psf_type):
+def make_plots(exposure, core_directory, psf_type):
 
     directory = "{0}/00{1}".format(core_directory, exposure)
     graph_values_directory = "{0}/graph_values_npy_storage".format(core_directory)
@@ -59,7 +59,7 @@ def make_histograms(exposure, core_directory, psf_type):
         for m, moment in enumerate(moments):
             for k, kind in enumerate(kinds):
                 kind_moment = shapes['{0}{1}'.format(kind,moment)].values
-                kind_final_moment, bin_edges, binnumber = stats.binned_statistic(x=snrs,values=kind_moment, statistic="mean",bins=10, range=(0.0,100.0))   
+                kind_final_moment, bin_edges, binnumber = stats.binned_statistic(x=snrs,values=kind_moment, statistic="mean",bins=10, range=(0.0,100.0)) #Here the average moment values inside snr bins are computed.  
                 information[m+k*len(moments)] = kind_final_moment
 
         np.save("{0}/{1}_{2}_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure),information)
@@ -77,4 +77,4 @@ if __name__ == '__main__':
     exposure = options.exposure
     core_directory = options.core_directory
     psf_type = options.psf_type
-    make_histograms(exposure=exposure, core_directory=core_directory, psf_type=psf_type)
+    make_plots(exposure=exposure, core_directory=core_directory, psf_type=psf_type)

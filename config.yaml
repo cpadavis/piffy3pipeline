@@ -1,18 +1,15 @@
 run_name: pipeline_v2_y3v29
 
-psf_dir: /nfs/slac/kipac/fs1/g/des/aresh/large_testbed
+psf_dir: /nfs/slac/kipac/fs1/g/des/aresh/large_testbed_y1
 # output base directory
-directory: /nfs/slac/kipac/fs1/g/des/aresh/full_thousand_exposure_fit_check_band_i_opt_L0
+directory: /nfs/slac/kipac/fs1/g/des/aresh/y1_many_exposure_fit_check_debugging_test_runs/y1_many_exposure_fit_check_band_i_opt_L0
 
 # what psfs will be run
 psf_optics_files:
     - psf_optatmo.yaml
-    # - psf_optatmovk.yaml
-    # []
 
 psf_other_files:
     - psf_pixelgrid.yaml
-    # []
 
 meanify:
     hyper:

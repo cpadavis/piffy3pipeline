@@ -51,7 +51,7 @@ def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_t
     for psf_file_path, piff_name, do_optatmo in zip(psf_file_paths, piff_names, do_optatmos):
 
         time = 600
-        memory = 3
+        memory = 7
 
         # code to make job_directory and name
         out_directory = '{0}/plots/{1}'.format(directory, piff_name)
@@ -107,9 +107,9 @@ def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_t
             if time > 0:
                 bsub_command += ['-W', str(time)]
             if memory > 1:
-                bsub_command += ['-n', str(memory),]
-                                 # '-R', '"span[ptile={0}]"'.format(memory)]
-
+                bsub_command += ['-n', str(memory),
+                                  #'-R', '"span[ptile={0}]"'.format(memory), 'rhel60']
+                                  '-R', 'span[hosts=1]']
             command = bsub_command + command
 
         print(' '.join(command))

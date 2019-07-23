@@ -16,8 +16,6 @@ import glob
 import lmfit
 import galsim
 import piff
-
-#from zernike import Zernike
 import copy
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -64,6 +62,8 @@ def make_graph(csv, psf_type, band, parameters):
     piff_parameter_list_dictionary = {}
     aos = pd.read_csv(csv)
     expid_list = aos['expid'].values  
+
+    #set up aos dictionary
     for parameter in parameters:
             if parameter == "r0oroptsize":
                 aos_parameter_list_dictionary["r0oroptsize"] =  aos['rzero '].values
@@ -72,6 +72,7 @@ def make_graph(csv, psf_type, band, parameters):
     for parameter in parameters:
             piff_parameter_list_dictionary[parameter] = []
                    
+    #set up piff dictionary
     piff_key_dictionary = {}
     for parameter in parameters:
         if parameter == "r0oroptsize":
@@ -101,6 +102,7 @@ def make_graph(csv, psf_type, band, parameters):
                 pupil_number = "00" + pupil_number
             piff_key_dictionary[parameter] = "zPupil{0}_zFocal{1}".format(pupil_number, focal_number)
             
+    #read aos and piff data to create aos vs piff graphs
     delete_list = []
     for exposure_i, exposure in enumerate(expid_list):
         try:
@@ -138,7 +140,7 @@ def make_graph(csv, psf_type, band, parameters):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--csv')
+    parser.add_argument('--csv') #csv file with aos data is needed
     parser.add_argument('--psf_type')
     parser.add_argument('--band')
     parser.add_argument('--parameters')

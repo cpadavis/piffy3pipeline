@@ -24,6 +24,11 @@ from astropy.io import fits
 from fit_psf import plot_2dhist_shapes
 from call_angular_moment_residual_plot_maker_part2 import find_filter_name_or_skip
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
 def meanify_config(files, average_file, meanify_params):
     config = {'output': {'file_name': files},
               'hyper': {'file_name': average_file}}
@@ -61,10 +66,19 @@ def call_meanify(run_config_path, overwrite, n, band):
 
         # glob over expids
         logger.info('Globbing')
+        very_original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
+        try:
+            acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
+            original_files = []
+            for very_original_file in very_original_files:
+                very_original_exposure = very_original_file.split("/")[-2][2:]
+                if very_original_exposure in acceptable_exposures:
+                    original_files.append(very_original_file)
+        except:
+            original_files = very_original_files        
         if band=="all":
-            files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
+            files = original_files
         else:
-            original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, psf_name)))
             files = []
             for original_file in original_files:
                 exposure = original_file.split("/")[-2][2:]
@@ -81,8 +95,84 @@ def call_meanify(run_config_path, overwrite, n, band):
 
         config = meanify_config(files, average_file, meanify_params)
         piff.meanify(config, logger=logger)
+        print("preparing to make plots")
 
+        # # make plots of meanify
+        logger.info('Making plots')
 
+        # # load X0 y0
+        n_neighbors=4
+        average = fitsio.read(average_file)
+        X0 = average['COORDS0'][0]
+        y0 = average['PARAMS0'][0]
+
+        neigh = KNeighborsRegressor(n_neighbors=n_neighbors)
+        neigh.fit(X0, y0)
+        y = neigh.predict(X0)
+        keys = [['atmo_size', 'atmo_g1', 'atmo_g2']]
+        shapes = {'u': X0[:, 0], 'v': X0[:, 1],
+                  'atmo_size': y[:, 0],
+                  'atmo_g1': y[:, 1], 'atmo_g2': y[:, 2]}
+        print("made shapes dict")
+        #keys_i = []
+        #for i in range(3, len(y[0])):
+        #    key = 'param_{0}'.format(i)
+        #    shapes[key] = y[:, i]
+        #    keys_i.append(key)
+        #    if len(keys_i) == 3:
+        #        keys.append(keys_i)
+        #        keys_i = []
+        #if len(keys_i) > 0:
+        #    keys_i += [keys_i[0]] * (3 - len(keys_i))
+        #    keys.append(keys_i)
+
+        #shapes = pd.DataFrame(shapes)
+
+        u_i = shapes['u']
+        v_i = shapes['v']
+        
+        print("made u v stuff")
+        
+        plt.figure()
+        print("made figure")
+        C_i = shapes['atmo_size']
+        print("got C_i")
+        kwargs_in = {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
+        print("made kwargs_in")
+        plt.hexbin(u_i, v_i, C=C_i, **kwargs_in)
+        print("made hexbin plot")
+        plt.colorbar()
+        print("made colorbar")
+        plt.title('atmo_size')
+        print("made title")
+        plt.tight_layout()
+        print("did tight layout")
+        plt.savefig('{0}/meanify_atmo_size_{1}_{2}.pdf'.format(directory, psf_name, band))
+        print("saved pdf")
+
+        print("did atmo_size")
+
+        plt.figure()
+        C_i = shapes['atmo_g1']
+        kwargs_in = {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
+        plt.hexbin(u_i, v_i, C=C_i, **kwargs_in)
+        plt.colorbar()
+        plt.title('atmo_g1')
+        plt.tight_layout()
+        plt.savefig('{0}/meanify_atmo_g1_{1}_{2}.pdf'.format(directory, psf_name, band))
+
+        print("did atmo_g1")
+
+        plt.figure()
+        C_i = shapes['atmo_g2']
+        kwargs_in = {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
+        plt.hexbin(u_i, v_i, C=C_i, **kwargs_in)
+        plt.colorbar()
+        plt.title('atmo_g2')
+        plt.tight_layout()
+        plt.savefig('{0}/meanify_atmo_g2_{1}_{2}.pdf'.format(directory, psf_name, band))
+
+        print("did atmo_g2")
 
 if __name__ == '__main__':
     import argparse

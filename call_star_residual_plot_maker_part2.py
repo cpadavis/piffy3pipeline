@@ -59,7 +59,8 @@ def make_call(band, psf_type):
         graph_directory = graph_directory + "/star_residual_plots_just_for_filter_{0}".format(band)
         os.system("mkdir {0}".format(graph_directory))
 
-    
+
+    #make graphs for whole focal plane; these are aggregated star data, model, and difference image graphs across many exposures    
     for label in ["test", "train"]:
         capital_kind_names = ["Data", "Model", "Difference"]
         kind_names = ["data", "model", "difference"]
@@ -118,7 +119,7 @@ def make_call(band, psf_type):
             break
 
 
-
+        #make graphs for all snr levels
         for l in [0, 1, 2]:
             try:
                 label_kind_average_plot_dictionary = {}

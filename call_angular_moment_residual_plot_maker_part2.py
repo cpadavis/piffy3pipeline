@@ -25,6 +25,7 @@ from matplotlib.figure import Figure
 
 
 def find_filter_name_or_skip(source_directory, exposure):
+    #This function finds the filter of the given exposure
     filter_name_and_skip_dictionary = {}
     filter_name_and_skip_dictionary['skip'] = False
     for index in range(1,63):
@@ -113,7 +114,7 @@ def make_call(psf_type, band):
         os.system("mkdir {0}".format(graph_directory))
 
     print("preparing to enter label for loop")
-    for label in ["test", "train"]:
+    for label in ["test", "train"]: #here, aggregate angular moment residual graphs are made
         print("entered label for loop")
 
         moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2", "orth4", "orth6", "orth8"]

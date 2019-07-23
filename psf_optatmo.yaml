@@ -174,7 +174,6 @@ psf:
     jmax_pupil: 37
     jmax_focal: 3
     min_optfit_snr: 40
-    analytic_coefs: /nfs/slac/g/ki/ki18/cpd/Projects/DES/Piff/piff/des/analytic_hsm_coefs.npy
     fit_optics_mode: shape
     higher_order_reference_wavefront_file: /nfs/slac/kipac/fs1/g/des/aresh/higher_order_reference_wavefront_pickle/decam_2012-nominalzernike-protocol2.pickle
     random_forest_shapes_model_pickles_location: /nfs/slac/kipac/fs1/g/des/aresh/random_forest_shapes_model_pickles
@@ -222,9 +221,6 @@ memory: 2
 test_fraction: 0.2 # save 20 percent
 
 interps:
-    gpvonkarman:
-        type: GPInterp2pcf
-        kernel: 1e-2 * VonKarman(100, (1e-8, 1e5))
     const_gpvonkarman:
         type: GPInterp2pcf
         kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))

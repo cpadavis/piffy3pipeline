@@ -60,6 +60,7 @@ def make_call(band, psf_type):
         os.system("mkdir {0}".format(graph_directory))
 
     
+    #make graphs for whole focal plane; these are aggregated star data, model, and difference image graphs across many exposures
     for label in ["test", "train"]:
         capital_kind_names = ["Data", "Model", "Difference"]
         kind_names = ["data", "model", "difference"]
@@ -115,7 +116,7 @@ def make_call(band, psf_type):
         plt.savefig('{0}/stars_{1}_radial_difference_'.format(graph_directory, label) + psf_type + '.png')
 
 
-
+        #make graphs for all ccds
         for l in range(1,63):
             try:
                 skip = False

@@ -442,7 +442,6 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
         if band=="all":
             files = original_files
         else:
-            original_files = sorted(glob.glob('{0}/*/{1}.piff'.format(directory, piff_name)))
             files = []
             for original_file in original_files:
                 exposure = original_file.split("/")[-2][2:]
@@ -478,7 +477,6 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
                 if band=="all":
                     files = original_files
                 else:
-                    original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
                     files = []
                     for original_file in original_files:
                         exposure = original_file.split("/")[-2][2:]
@@ -514,7 +512,6 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
             if band=="all":
                 files = original_files
             else:
-                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
                 files = []
                 for original_file in original_files:
                     exposure = original_file.split("/")[-2][2:]      
@@ -556,7 +553,6 @@ def collect(directory, piff_name, out_directory, do_optatmo=False, skip_rho=Fals
             if band=="all":
                 files = original_files
             else:
-                original_files = sorted(glob.glob('{0}//*/shapes_{1}_{2}.h5'.format(directory, label, piff_name)))
                 files = []
                 for original_file in original_files:
                     exposure = original_file.split("/")[-2][2:]

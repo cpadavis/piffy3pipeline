@@ -31,7 +31,7 @@ input:
     image_hdu: 1
     badpix_hdu: 2
     weight_hdu: 3
-    cat_hdu: 2
+    cat_hdu: 1
 
     # What columns in the catalog have things we need?
     x_col: x

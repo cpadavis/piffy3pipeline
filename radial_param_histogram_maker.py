@@ -29,7 +29,7 @@ def make_call(band):
     program_name = core_directory.split("/")[-1]
     core_directory = core_directory.split("/{0}".format(program_name))[0]
     graph_values_directory = core_directory + "/graph_values_npy_storage"
-    graph_directory = "{0}/multi_exposure_graphs/opt_L0_plots_across_exposures".format(core_directory)
+    graph_directory = "{0}/multi_exposure_graphs/radial_param_histogram_plots_across_exposures".format(core_directory)
     os.system("mkdir {0}".format(graph_directory))
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
     very_original_exposures = glob.glob("{0}/*".format(source_directory))
@@ -54,29 +54,51 @@ def make_call(band):
                 filter_name = filter_name_and_skip_dictionary['filter_name']       
             if filter_name in band:
                 exposures.append(original_exposure)  
-        graph_directory = graph_directory + "/opt_L0_plots_just_for_filter_{0}".format(band)
+        graph_directory = graph_directory + "/radial_param_histogram_plots_just_for_filter_{0}".format(band)
         os.system("mkdir {0}".format(graph_directory))
 
     
-    #collect data on opt_L0s
+    #load up the radial data
     opt_L0s = []
-    exposures_with_opt_L0 = []
+    opt_sizes = []
+    z4ds = []
+    z11ds = []
     for exposure_i, exposure in enumerate(exposures):
         try:
             load_string = "{0}/00{1}/optatmo_psf_kwargs.npy".format(core_directory,exposure)
             optatmo_psf_kwargs = np.load(load_string)
             optatmo_psf_kwargs_item = optatmo_psf_kwargs.item()
             opt_L0 = optatmo_psf_kwargs_item["L0"]
+            opt_size = optatmo_psf_kwargs_item["size"]
+            z4d = optatmo_psf_kwargs_item["zPupil004_zFocal001"]
+            z11d = optatmo_psf_kwargs_item["zPupil011_zFocal001"]
             opt_L0s.append(opt_L0)
-            exposures_with_opt_L0.append(int(exposure))
+            opt_sizes.append(opt_size)
+            z4ds.append(z4d)
+            z11ds.append(z11ds)
         except:
             pass
 
-    #graph the opt_L0s
+    #make the graphs
     plt.figure()
-    plt.scatter(exposures_with_opt_L0, opt_L0s)
+    plt.hist(opt_L0s)
     plt.title('opt_L0 across exposures')
     plt.savefig('{0}/opt_L0_across_exposures'.format(graph_directory) + '.png')
+
+    plt.figure()
+    plt.hist(opt_sizes)
+    plt.title('opt_size across exposures')
+    plt.savefig('{0}/opt_size_across_exposures'.format(graph_directory) + '.png')
+
+    plt.figure()
+    plt.hist(z4ds)
+    plt.title('z4d across exposures')
+    plt.savefig('{0}/z4d_across_exposures'.format(graph_directory) + '.png')
+
+    plt.figure()
+    plt.hist(z11ds)
+    plt.title('z11d across exposures')
+    plt.savefig('{0}/z11d_across_exposures'.format(graph_directory) + '.png')
 
 
 

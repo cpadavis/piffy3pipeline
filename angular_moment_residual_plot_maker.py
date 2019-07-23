@@ -19,8 +19,8 @@ import sys
 
 from piff.util import hsm_error, measure_snr
 
-def make_pngs(directory, label, information, moments):
-
+def make_png(directory, label, information, moments):
+    #This function graphs the moments' data, model, and difference values across various polar angles with respect to the center of the focal plane
     fig, axss = plt.subplots(nrows=4, ncols=3, figsize=(4 * 4, 4 * 4), squeeze=False)
     # left column gets the Y coordinate label
     for axs in axss:
@@ -62,11 +62,11 @@ def make_plots(exposure, core_directory, psf_type):
         for m, moment in enumerate(moments):
             for k, kind in enumerate(kinds):
                 kind_moment = shapes['{0}{1}'.format(kind,moment)].values
-                kind_final_moment, bin_edges, binnumber = stats.binned_statistic(x=angles,values=kind_moment, statistic="mean",bins=36, range=(0.0,360.0))   
+                kind_final_moment, bin_edges, binnumber = stats.binned_statistic(x=angles,values=kind_moment, statistic="mean",bins=36, range=(0.0,360.0)) #Here the average moment values inside polar angular bins are computed.
                 information[m+k*len(moments)] = kind_final_moment
 
         np.save("{0}/{1}_{2}_angular_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure),information)
-        make_pngs(directory=directory, label=label, information=information, moments=moments)
+        make_png(directory=directory, label=label, information=information, moments=moments)
   
 
 
