@@ -1,8 +1,9 @@
 run_name: pipeline_v2_y3v29
 
+# below is the source_directory where the image and cat files you are using for your fit are
 psf_dir: /nfs/slac/kipac/fs1/g/des/aresh/large_testbed_y1
-# output base directory
-directory: /nfs/slac/kipac/fs1/g/des/aresh/y1_many_exposure_fit_check_debugging_test_runs/y1_many_exposure_fit_check_band_i_opt_L0
+# below is the directory for the outputs (currently unused as all outputs are set to be wherever the file you are running, such as call_fit_psf.py, is)
+#directory: /nfs/slac/kipac/fs1/g/des/aresh/y1_many_exposure_fit_check_debugging_test_runs/y1_many_exposure_fit_check_band_i_opt_L0
 
 # what psfs will be run
 psf_optics_files:

@@ -12,7 +12,11 @@ import piff
 def call_collect(run_config_path, bsub, check, call, skip_rho, skip_oned, skip_twod, skip_params, band):
 
     run_config = piff.read_config(run_config_path)
-    directory = run_config['directory']  # directory such that you can go glob(directory/*/psf.piff) and find piff files
+    #directory = run_config['directory']
+    current_directory = os.path.realpath(__file__)
+    program_name = core_directory.split("/")[-1]
+    current_directory = current_directory.split("/{0}".format(program_name))[0]
+    directory = current_directory # directory such that you can go glob(directory/*/psf.piff) and find piff files
 
     # load up psf names
     # rho stats and atmo params

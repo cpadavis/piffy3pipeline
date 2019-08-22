@@ -49,7 +49,11 @@ def call_meanify(run_config_path, overwrite, n, band):
 
     run_config = piff.read_config(run_config_path)
     psf_files = run_config['psf_optics_files']
-    directory = run_config['directory']  # where we save files
+    #directory = run_config['directory']
+    current_directory = os.path.realpath(__file__)
+    program_name = core_directory.split("/")[-1]
+    current_directory = current_directory.split("/{0}".format(program_name))[0]
+    directory = current_directory # where we save files
     meanify_params = run_config['meanify']
 
     for psf_file in psf_files:

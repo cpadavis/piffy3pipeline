@@ -32,7 +32,11 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
         psf_files = run_config['psf_optics_files'] + run_config['psf_other_files']
     psf_dir = run_config['psf_dir']  # where we load the psf files
     source_directory = psf_dir
-    directory = run_config['directory']  # where we save files
+    #directory = run_config['directory']
+    current_directory = os.path.realpath(__file__)
+    program_name = core_directory.split("/")[-1]
+    current_directory = current_directory.split("/{0}".format(program_name))[0]
+    directory = current_directory # where we save files
 
     # get list of expids
     expids = [int(val.split('/')[-2]) for val in sorted(glob.glob('{0}/*/input.yaml'.format(psf_dir)))]

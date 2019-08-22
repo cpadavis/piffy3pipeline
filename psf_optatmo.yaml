@@ -42,7 +42,7 @@ input:
     sky_col: sky
 
     # How large should the postage stamp cutouts of the stars be?
-    stamp_size: 31
+    stamp_size: 19
 
     # stick to well measured stars here
     min_snr: 20
@@ -216,7 +216,7 @@ output:
 # about the progress.
 verbose: 2
 
-time: 2500
+time: 20000
 memory: 2
 test_fraction: 0.2 # save 20 percent
 

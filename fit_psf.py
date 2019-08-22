@@ -264,7 +264,6 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         test_indx = np.random.choice(len(stars), int(test_fraction * len(stars)), replace=False)
         test_stars = []
         train_stars = []
-        # kludgey:
         for star_i, star in enumerate(stars):
             if star_i in test_indx:
                 test_stars.append(star)
@@ -400,7 +399,8 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         psf.write(output.file_name, logger=logger)
 
         # and write test stars
-        test_stars = psf.test_stars
+        if is_optatmo:
+            test_stars = psf.test_stars
         write_stars(test_stars, output.file_name, logger=logger)
 
     shape_keys = ['e0', 'e1', 'e2', 'zeta1', 'zeta2', 'delta1', 'delta2', 'orth4', 'orth6', 'orth8']
@@ -409,7 +409,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         shape_plot_keys.append(['data_' + key, 'model_' + key, 'd' + key])
     if is_optatmo:
         interps = config.pop('interps')
-        interp_keys = interps.keys()
+        interp_keys = list(interps.keys())
         if not (do_meanify or fit_interp_only):
             # do noatmo only when we do not have meanify
             interp_keys = interp_keys + ['noatmo']
