@@ -501,23 +501,19 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 logger.info("failed in either making or not making optatmo_psf_kwargs npy file")
             logger.info('Preparing to draw model stars')
             for stars, label in zip([psf.stars, psf.test_stars], ['train', 'test']):
-                logger.info('Preparing to draw {0} model stars'.format(label))
-                # get shapes
-                logger.debug('drawing {0} model stars'.format(label))
-                delete_list = []
-                model_stars = []
-                for star_i, star in enumerate(stars):
-                    if star_i % 100 == 0:
-                        logger.info('attempting to draw model star {0}, {1} model stars'.format(star_i, label))
-                    try:
-                        model_star = psf.drawStar(star)
-                        model_stars.append(model_star)
-                    except:
-                        delete_list.append(star_i)
-                stars = np.delete(stars, delete_list)
-                #model_stars = psf.drawStarList(stars)
-                logger.info('Finished drawing {0} model stars'.format(label))
 
+                # draw model stars in order to measure their shapes
+                logger.info('Preparing to draw {0} {1} model stars'.format(len(stars), label))
+                delete_list = []
+                model_stars = psf.drawStarList(stars)
+                for star_i, star in enumerate(stars):
+                    if star == None:
+                        delete_list.append(star_i)
+                stars = np.delete(stars, delete_list).tolist()
+                model_stars = np.delete(model_stars, delete_list).tolist()
+                logger.info('Finished drawing {0} {1} model stars. Some failed to be drawn and were thrown out.'.format(len(stars), label))
+
+                # measure shapes
                 logger.info('Preparing to extract and get params (& fit params if train stars) graphs for {0} stars'.format(label))
                 logger.info('Using measure_star_shape()')
                 shapes = measure_star_shape(psf, stars, model_stars, logger=logger)
@@ -607,23 +603,22 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
     else:
         logger.info('Evaluating {0}'.format(piff_name))
 
-        for stars, label in zip([psf.stars, psf.test_stars], ['train', 'test']):
+        for stars, label in zip([psf.stars, test_stars], ['train', 'test']):
         
             np.save("{0}/stars_{1}_{2}.npy".format(directory, label, piff_name),np.array(stars))        
         
-            # get shapes
+            # draw model stars in order to measure their shapes
+            logger.info('Preparing to draw {0} {1} model stars'.format(len(stars), label))
             delete_list = []
-            model_stars = []
+            model_stars = psf.drawStarList(stars)
             for star_i, star in enumerate(stars):
-                if star_i % 100 == 0:
-                    logger.debug('attempting to draw model star {0}, {1} model stars'.format(star_i, label))            
-                try:
-                    model_star = psf.drawStar(star)
-                    model_stars.append(model_star)
-                except:
+                if star == None:
                     delete_list.append(star_i)
-            stars = np.delete(stars, delete_list)
-            #model_stars = psf.drawStarList(stars)
+            stars = np.delete(stars, delete_list).tolist()
+            model_stars = np.delete(model_stars, delete_list).tolist()
+            logger.info('Finished drawing {0} {1} model stars. Some failed to be drawn and were thrown out.'.format(len(stars), label))
+
+            # measure shapes
             shapes = measure_star_shape(psf, stars, model_stars, logger=logger)
 
             # save shapes
