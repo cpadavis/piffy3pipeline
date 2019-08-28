@@ -50,10 +50,7 @@ def call_meanify(run_config_path, overwrite, n, band):
     run_config = piff.read_config(run_config_path)
     psf_files = run_config['psf_optics_files']
     #directory = run_config['directory']
-    current_directory = os.path.realpath(__file__)
-    program_name = core_directory.split("/")[-1]
-    current_directory = current_directory.split("/{0}".format(program_name))[0]
-    directory = current_directory # where we save files
+    directory = core_directory # where we save files
     meanify_params = run_config['meanify']
 
     for psf_file in psf_files:
@@ -136,47 +133,17 @@ def call_meanify(run_config_path, overwrite, n, band):
         v_i = shapes['v']
         
         print("made u v stuff")
-        
-        plt.figure()
-        print("made figure")
-        C_i = shapes['atmo_size']
-        print("got C_i")
-        kwargs_in = {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
-        print("made kwargs_in")
-        plt.hexbin(u_i, v_i, C=C_i, **kwargs_in)
-        print("made hexbin plot")
-        plt.colorbar()
-        print("made colorbar")
-        plt.title('atmo_size')
-        print("made title")
-        plt.tight_layout()
-        print("did tight layout")
-        plt.savefig('{0}/meanify_atmo_size_{1}_{2}.pdf'.format(directory, psf_name, band))
-        print("saved pdf")
 
-        print("did atmo_size")
-
-        plt.figure()
-        C_i = shapes['atmo_g1']
-        kwargs_in = {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
-        plt.hexbin(u_i, v_i, C=C_i, **kwargs_in)
-        plt.colorbar()
-        plt.title('atmo_g1')
-        plt.tight_layout()
-        plt.savefig('{0}/meanify_atmo_g1_{1}_{2}.pdf'.format(directory, psf_name, band))
-
-        print("did atmo_g1")
-
-        plt.figure()
-        C_i = shapes['atmo_g2']
-        kwargs_in = {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
-        plt.hexbin(u_i, v_i, C=C_i, **kwargs_in)
-        plt.colorbar()
-        plt.title('atmo_g2')
-        plt.tight_layout()
-        plt.savefig('{0}/meanify_atmo_g2_{1}_{2}.pdf'.format(directory, psf_name, band))
-
-        print("did atmo_g2")
+        {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
+        for key in ['atmo_size', 'atmo_g1', 'atmo_g2']:
+            plt.figure()
+            C_i = shapes[key]
+            plt.hexbin(u_i, v_i, C=C_i, **kwargs_in)
+            plt.colorbar()
+            plt.title(key)
+            plt.tight_layout()
+            plt.savefig('{0}/meanify_{1}_{2}_{3}.pdf'.format(directory, key, psf_name, band))
+            print("did {0} and saved pdf".format(key))
 
 if __name__ == '__main__':
     import argparse

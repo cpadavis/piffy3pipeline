@@ -150,7 +150,7 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
     
     
     for label in ["test", "train"]:
-        stars_label = np.load("{0}/stars_{1}_psf_{2}.npy".format(directory, label, psf_type))
+        stars_label = np.load("{0}/stars_{1}_psf_{2}.npy".format(directory, label, psf_type), allow_pickle=True)
         for star_label in stars_label:
             star_label.fit.params = None
         early_delete_list = []    

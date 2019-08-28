@@ -64,10 +64,7 @@ def load_star_images(stars, config, logger=None):
         # image_file_name: /nfs/slac/g/ki/ki19/des/cpd/y3_piff/exposures_v29_grizY/512974/*.fits.fz
         # e.g. psf_im_512974_5.fits.fz
         expid = int(inconfig['image_file_name'].split('/')[-2])
-        if chipnum < 10:
-            file_name = '/'.join(inconfig['image_file_name'].split('/')[:-1]) + '/psf_im_{0}_0{1}.fits.fz'.format(expid, int(chipnum))
-        else:
-            file_name = '/'.join(inconfig['image_file_name'].split('/')[:-1]) + '/psf_im_{0}_{1}.fits.fz'.format(expid, int(chipnum))
+        file_name = '/'.join(inconfig['image_file_name'].split('/')[:-1]) + '/psf_im_{0}_{1:02d}.fits.fz'.format(expid, int(chipnum))
 
         ccd_loaded_stars = piff.Star.load_images(ccd_stars, file_name, image_hdu=inconfig['image_hdu'], weight_hdu=inconfig['weight_hdu'], badpix_hdu=inconfig['badpix_hdu'], logger=logger)
         loaded_stars += ccd_loaded_stars

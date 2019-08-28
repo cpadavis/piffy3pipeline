@@ -19,17 +19,12 @@ import copy
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
+from call_angular_moment_residual_plot_maker_part2 import find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory
 
 
 
 def flag_exposure_outliers():
-    core_directory = os.path.realpath(__file__)
-    program_name = core_directory.split("/")[-1]
-    core_directory = core_directory.split("/{0}".format(program_name))[0]
-    source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
-    original_exposures = glob.glob("{0}/*".format(source_directory))
-    original_exposures = [original_exposure.split("/")[-1] for original_exposure in original_exposures]
-    exposures = original_exposures
+    core_directory, source_directory, exposures = find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory()
 
     #here, plots are made of the pull mean and outlier rejection is done based on that
     moments = ["e0", "e1", "e2"]

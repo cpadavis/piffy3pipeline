@@ -22,19 +22,12 @@ import copy
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 from call_angular_moment_residual_plot_maker_part2 import find_filter_name_or_skip
+from call_angular_moment_residual_plot_maker_part2 import find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory
 
 
 
 def make_call(psf_type, band):
-    core_directory = os.path.realpath(__file__)
-    program_name = core_directory.split("/")[-1]
-    core_directory = core_directory.split("/{0}".format(program_name))[0]
-    graph_values_directory = "{0}/graph_values_npy_storage".format(core_directory)
-    graph_directory = "{0}/multi_exposure_graphs/{1}_snr_moment_residual_plots_averaged_across_exposures".format(core_directory, psf_type)
-    os.system("mkdir {0}".format(graph_directory))
-    source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
-    very_original_exposures = glob.glob("{0}/*".format(source_directory))
-    very_original_exposures = [very_original_exposure.split("/")[-1] for very_original_exposure in very_original_exposures]
+    core_directory, source_directory, very_original_exposures, graph_values_directory, graph_directory = find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(graph_type="snr_moment_residual_plots_averaged_across_exposures", set_up_graph_directory_and_graph_values_directory=True)
     try:
         acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
         original_exposures = []
@@ -68,6 +61,8 @@ def make_call(psf_type, band):
             for kind in kinds:   
                 kind_final_moment_dictionary['{0}{1}'.format(kind,moment)] = []
 
+        got_number_of_snr_bins = False
+        number_of_snr_bins = 0
         for exposure_i, exposure in enumerate(exposures):
             try:
                 for m, moment in enumerate(moments):
@@ -76,8 +71,14 @@ def make_call(psf_type, band):
                         kind_final_moment_dictionary['{0}{1}'.format(kind,moment)].append(np.load("{0}/{1}_{2}_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure))[m+k*len(moments)])                 
             except:
                 pass
+            if got_number_of_snr_bins == False:
+                number_of_snr_bins = np.load("{0}/{1}_{2}_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure).shape[1]
+                got_number_of_snr_bins = True
 
-        final_snrs = np.arange(5, 96, 10, dtype=np.float)
+        bin_width = 360.0 / number_of_snr_bins
+        half_bin_width = bin_width / 2.0
+        final_snrs_edges = np.linspace(0.0, 100.0, num=number_of_snr_bins)
+        final_snrs = final_snrs_edges[1:] - half_bin_width
         print(kind_final_moment_dictionary['data_e0']) 
 
         for entry in kind_final_moment_dictionary:

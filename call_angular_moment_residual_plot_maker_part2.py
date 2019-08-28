@@ -24,25 +24,43 @@ from matplotlib.figure import Figure
 
 
 
+def find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(graph_type=None, set_up_graph_directory_and_graph_values_directory=False):
+    #This function finds the appropriate exposures and sets up and finds directories
+    core_directory = os.path.realpath(__file__)
+    program_name = core_directory.split("/")[-1]
+    core_directory = core_directory.split("/{0}".format(program_name))[0]
+    if set_up_graph_directory_and_graph_values_directory == True:
+        if graph_type == None:
+            raise AttributeError('graph_type is set to None but this cannot be done when set_up_graph_directory_and_graph_values_directory = True')
+        graph_values_directory = "{0}/graph_values_npy_storage".format(core_directory)
+        graph_directory = "{0}/multi_exposure_graphs/{1}_{2}".format(core_directory, psf_type, graph_type)
+        os.system("mkdir {0}".format(graph_directory))
+    source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
+    exposures = glob.glob("{0}/*".format(source_directory))
+    exposures = [exposure.split("/")[-1] for exposure in exposures]
+    if set_up_graph_directory_and_graph_values_directory == False:
+        return core_directory, source_directory, exposures
+    else:
+        return core_directory, source_directory, exposures, graph_values_directory, graph_directory
+
+
 def find_filter_name_or_skip(source_directory, exposure):
     #This function finds the filter of the given exposure
     filter_name_and_skip_dictionary = {}
     filter_name_and_skip_dictionary['skip'] = False
     for index in range(1,63):
         try:
-            band_test_file = "{0}/{1}/psf_cat_{1}_{2}.fits".format(source_directory, exposure, index)
+            band_test_file = "{0}/{1}/psf_cat_{1}_{2:02d}.fits".format(source_directory, exposure, index)
             print("first band_test_file: {0}".format(band_test_file))
             hdu = fits.open(band_test_file)
             print("hdu found!")
             break
         except:
             print("failed to find hdu")
-            if index==62:
-                print("failed to find any hdu")
-                filter_name_and_skip_dictionary['skip'] = True
-                return filter_name_and_skip_dictionary
-            else:
-                pass
+    else:
+        print("failed to find any hdu")
+        filter_name_and_skip_dictionary['skip'] = True
+        return filter_name_and_skip_dictionary
     try:
         band_test_file = "{0}/{1}/exp_psf_cat_{1}.fits".format(source_directory, exposure)
         print("second band_test_file: {0}".format(band_test_file))
@@ -75,15 +93,7 @@ def find_filter_name_or_skip(source_directory, exposure):
     
 
 def make_call(psf_type, band):
-    core_directory = os.path.realpath(__file__)
-    program_name = core_directory.split("/")[-1]
-    core_directory = core_directory.split("/{0}".format(program_name))[0]
-    graph_values_directory = "{0}/graph_values_npy_storage".format(core_directory)
-    graph_directory = "{0}/multi_exposure_graphs/{1}_angular_moment_residual_plots_averaged_across_exposures".format(core_directory, psf_type)
-    os.system("mkdir {0}".format(graph_directory))
-    source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
-    very_original_exposures = glob.glob("{0}/*".format(source_directory))
-    very_original_exposures = [very_original_exposure.split("/")[-1] for very_original_exposure in very_original_exposures]
+    core_directory, source_directory, very_original_exposures, graph_values_directory, graph_directory = find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(graph_type="angular_moment_residual_plots_averaged_across_exposures", set_up_graph_directory_and_graph_values_directory=True)
     try:
         acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
         original_exposures = []
@@ -129,6 +139,8 @@ def make_call(psf_type, band):
         print("kind_final_moment_dictionary: {0}".format(kind_final_moment_dictionary))
 
         print("preparing to run through exposures")
+        got_number_of_angular_bins = False
+        number_of_angular_bins = 0
         for exposure_i, exposure in enumerate(exposures):
             try:
                 print("exposure_i, exposure: {0}, {1}".format(exposure_i, exposure))
@@ -142,8 +154,14 @@ def make_call(psf_type, band):
                         print(kind_final_moment_dictionary['{0}{1}'.format(kind,moment)])  
             except:
                 pass
+            if got_number_of_angular_bins == False:
+                number_of_angular_bins = np.load("{0}/{1}_{2}_angular_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure).shape[1]
+                got_number_of_angular_bins = True
 
-        final_angles = np.arange(5, 356, 10, dtype=np.float)
+        bin_width = 360.0 / number_of_angular_bins
+        half_bin_width = bin_width / 2.0
+        final_angles_edges = np.linspace(0.0, 360.0, num=number_of_angular_bins)
+        final_angles = final_angles_edges[1:] - half_bin_width
         print(kind_final_moment_dictionary['data_e0']) 
 
         print("preparing to take mean")

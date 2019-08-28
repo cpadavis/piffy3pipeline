@@ -105,10 +105,3 @@ venv.bak/
 
 # vim
 .*.sw*
-
-# other stuff
-download_y3.py
-download_y3_mod4_plus_0.py
-download_y3_mod4_plus_1.py
-download_y3_mod4_plus_2.py
-download_y3_mod4_plus_3.py

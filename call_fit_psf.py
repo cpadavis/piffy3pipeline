@@ -88,22 +88,11 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             config['input']['wcs']['exp'] = expid
             # and I also messed up the ccd splitting
             config['input']['wcs']['ccdnum']['str'] = "image_file_name.split('_')[-1].split('.fits')[0]"
+            filter_lam = {"u": 387.6, "g": 484.2, "r": 643.9, "i": 782.1, "z": 917.2, "Y": 987.8}
             if config['psf']['type'] == 'OptAtmo':
-           	    # look up band information
-
+           	# look up band information
                 # modify config band information
-                if filter_name == "u":
-                    config['psf']['optical_psf_kwargs']['lam'] = 387.6
-                if filter_name == "g":
-                    config['psf']['optical_psf_kwargs']['lam'] = 484.2
-                if filter_name == "r":
-                    config['psf']['optical_psf_kwargs']['lam'] = 643.9
-                if filter_name == "i":
-                    config['psf']['optical_psf_kwargs']['lam'] = 782.1
-                if filter_name == "z":
-                    config['psf']['optical_psf_kwargs']['lam'] = 917.2
-                if filter_name == "Y":
-                    config['psf']['optical_psf_kwargs']['lam'] = 987.8
+                config['psf']['optical_psf_kwargs']['lam'] = filter_lam[filter_name]
 
             if print_log:
                 config['verbose'] = 3
