@@ -155,7 +155,7 @@ def make_call(psf_type, band):
             except:
                 pass
             if got_number_of_angular_bins == False:
-                number_of_angular_bins = np.load("{0}/{1}_{2}_angular_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure).shape[1]
+                number_of_angular_bins = np.load("{0}/{1}_{2}_angular_information_{3}.npy".format(graph_values_directory, label, psf_type, exposure)).shape[1]
                 got_number_of_angular_bins = True
 
         bin_width = 360.0 / number_of_angular_bins

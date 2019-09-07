@@ -229,6 +229,6 @@ memory: 2
 test_fraction: 0.2 # save 20 percent
 
 interps:
-    const_gpvonkarman:
-        type: GPInterp2pcf
-        kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))
+    zero_poly:
+        type: Polynomial
+        order: 0

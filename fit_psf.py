@@ -78,6 +78,9 @@ def load_star_images(stars, config, logger=None):
 def measure_star_shape(psf, stars, model_stars, logger=None):
     logger = galsim.config.LoggerWrapper(logger)
     shapes = []
+    #for star in model_stars:
+    #    if star == None or str(type(star)) == "<class 'NoneType'>" or str(type(star)) != "<class 'piff.star.Star'>":
+    #        raise AttributeError('model_star that is not of the star class found!')
     for i in range(len(stars)):
         if i % 100 == 0:
             logger.debug('Measuring shape of star {0} of {1}'.format(i, len(stars)))
@@ -86,6 +89,8 @@ def measure_star_shape(psf, stars, model_stars, logger=None):
         # returns a pandas series
         flux, u0, v0, e0, e1, e2, zeta1, zeta2, delta1, delta2, orth4, orth6, orth8 = psf.measure_shape_orthogonal(star)
         sigma_flux, sigma_u0, sigma_v0, sigma_e0, sigma_e1, sigma_e2, sigma_zeta1, sigma_zeta2, sigma_delta1, sigma_delta2, sigma_orth4, sigma_orth6, sigma_orth8 = psf.measure_error_orthogonal(star)
+        #if model_star == None or str(type(star)) == "<class 'NoneType'>" or str(type(star)) != "<class 'piff.star.Star'>":
+        #    raise AttributeError('model_star that is not of the star class found!')
         model_flux, model_u0, model_v0, model_e0, model_e1, model_e2, model_zeta1, model_zeta2, model_delta1, model_delta2, model_orth4, model_orth6, model_orth8 = psf.measure_shape_orthogonal(model_star)
 
         properties = {key: star.data.properties[key] for key in ['chipnum', 'x', 'y', 'u', 'v', 'ra', 'dec']}
@@ -240,6 +245,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         logger.info('loading test stars')
         test_stars = read_stars(out_path, logger=logger)
         test_stars = load_star_images(test_stars, config, logger=logger)
+        psf.test_stars = test_stars
 
         # make output
         config['output']['dir'] = directory
@@ -280,6 +286,35 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
             psf.fit(train_stars, test_stars, wcs, pointing, logger=logger)
             #test_stars = psf.test_stars
         logger.info('Fitted PSF!')
+
+
+        # save optical pull cuts and other similar things; some of these will be used in doing cuts on exposures
+        if is_optatmo:
+            logger.info('number of stars pre cut optical: {0}'.format(psf.number_of_stars_pre_cut_optical))
+            logger.info('number of stars post cut optical: {0}'.format(psf.number_of_stars_post_cut_optical))
+            number_of_outliers_optical = psf.number_of_outliers_optical
+            pull_mean_optical = psf.pull_mean_optical
+            pull_rms_optical = psf.pull_rms_optical
+            pull_all_stars_optical = psf.pull_all_stars_optical
+            chisq_all_stars_optical = psf.chisq_all_stars_optical
+            total_redchi_across_iterations = psf.total_redchi_across_iterations
+            iterations_indices = range(0,len(total_redchi_across_iterations))
+            logger.info('Preparing to save npy files')
+            np.save("{0}/number_of_outliers_optical.npy".format(directory),np.array(number_of_outliers_optical))
+            np.save("{0}/pull_mean_optical.npy".format(directory),np.array(pull_mean_optical))    
+            np.save("{0}/pull_rms_optical.npy".format(directory),np.array(pull_rms_optical))
+            logger.info('Preparing to create optical pull histograms as well as chisq histogram')
+            for m, moment in enumerate(["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]):
+                plt.figure()
+                plt.hist(pull_all_stars_optical[:,m])
+                plt.savefig("{0}/{1}_optical_pull_hist.png".format(directory, moment))
+            plt.figure()
+            plt.hist(chisq_all_stars_optical)
+            plt.savefig("{0}/optical_chisq_hist.png".format(directory))
+            plt.figure()
+            plt.scatter(x=iterations_indices,y=total_redchi_across_iterations)
+            plt.savefig("{0}/total_redchi_across_iterations.png".format(directory))
+            logger.info('Finished creating optical pull histograms as well as chisq histogram')
 
 
         # fit atmosphere parameters (for train stars)
@@ -436,36 +471,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
             logger.info('Evaluating {0}'.format(piff_name))
 
 
-            if not do_meanify:
-                logger.info('number of stars pre cut optical: {0}'.format(psf.number_of_stars_pre_cut_optical))
-                logger.info('number of stars post cut optical: {0}'.format(psf.number_of_stars_post_cut_optical))
-                number_of_outliers_optical = psf.number_of_outliers_optical
-                pull_mean_optical = psf.pull_mean_optical
-                pull_rms_optical = psf.pull_rms_optical
-                pull_all_stars_optical = psf.pull_all_stars_optical
-                chisq_all_stars_optical = psf.chisq_all_stars_optical
-                total_redchi_across_iterations = psf.total_redchi_across_iterations
-                iterations_indices = range(0,len(total_redchi_across_iterations))
-                logger.info('Preparing to enter optical npy file if statement')
-                if piff_name == "psf_optatmo_const_gpvonkarman":
-                    logger.info('Preparing to save npy files')
-                    np.save("{0}/number_of_outliers_optical.npy".format(directory),np.array(number_of_outliers_optical))
-                    np.save("{0}/pull_mean_optical.npy".format(directory),np.array(pull_mean_optical))    
-                    np.save("{0}/pull_rms_optical.npy".format(directory),np.array(pull_rms_optical))
-                    logger.info('Preparing to create optical pull histograms as well as chisq histogram')
-                    for m, moment in enumerate(["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]):
-                        plt.figure()
-                        plt.hist(pull_all_stars_optical[:,m])
-                        plt.savefig("{0}/{1}_optical_pull_hist.png".format(directory, moment))
-                    plt.figure()
-                    plt.hist(chisq_all_stars_optical)
-                    plt.savefig("{0}/optical_chisq_hist.png".format(directory))
-                    plt.figure()
-                    plt.scatter(x=iterations_indices,y=total_redchi_across_iterations)
-                    plt.savefig("{0}/total_redchi_across_iterations.png".format(directory))
-                    logger.info('Finished creating optical pull histograms as well as chisq histogram')
-
-
+            # save a copy of the data stars (test and train) to npy files
             logger.info('Preparing to copy stars_test and stars_train')
             stars_test = copy.deepcopy(psf.test_stars)
             stars_train = copy.deepcopy(psf.stars)  
@@ -483,7 +489,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 ########################################################################
 ########################################################################
 
-            logger.info('Finished outlier rejection tasks')
+            logger.info('Finished saving stars to npy files')
             try:
                 optatmo_psf_kwargs = psf.optatmo_psf_kwargs
                 if piff_name == "psf_optatmo_const_gpvonkarman":
@@ -503,12 +509,24 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 logger.info('Preparing to draw {0} {1} model stars'.format(len(stars), label))
                 delete_list = []
                 model_stars = psf.drawStarList(stars)
-                for star_i, star in enumerate(stars):
-                    if star == None:
+                logger.info('Preliminarily drew model stars. Will now identify stars failed to be drawn to throw them out.')
+                for star_i, star in enumerate(model_stars):
+                    #logger.info("star_i: {0}".format(star_i))
+                    if star == None: #or str(type(star)) == "<class 'NoneType'>" or str(type(star)) != "<class 'piff.star.Star'>":
                         delete_list.append(star_i)
+                logger.info("delete_list: {0}".format(delete_list))
                 stars = np.delete(stars, delete_list).tolist()
                 model_stars = np.delete(model_stars, delete_list).tolist()
-                logger.info('Finished drawing {0} {1} model stars. Some failed to be drawn and were thrown out.'.format(len(stars), label))
+                #for star_i, star in enumerate(model_stars):
+                #    if star == None or str(type(star)) == "<class 'NoneType'>" or str(type(star)) != "<class 'piff.star.Star'>":
+                #        if star == None:
+                #            logger.info('star == None')
+                #        if str(type(star)) == "<class 'NoneType'>":
+                #            logger.info('star type appears to be NoneType')
+                #        if str(type(star)) == "<class 'piff.star.Star'>":
+                #            logger.info('star type not of the star class')
+                #        raise AttributeError('model_star that is not of the star class found!')
+                logger.info('Finished drawing {0} {1} model stars. Some may have failed to be drawn and were thrown out.'.format(len(stars), label))
 
                 # measure shapes
                 logger.info('Preparing to extract and get params (& fit params if train stars) graphs for {0} stars'.format(label))

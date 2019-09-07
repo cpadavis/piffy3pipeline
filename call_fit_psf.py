@@ -34,7 +34,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
     source_directory = psf_dir
     #directory = run_config['directory']
     current_directory = os.path.realpath(__file__)
-    program_name = core_directory.split("/")[-1]
+    program_name = current_directory.split("/")[-1]
     current_directory = current_directory.split("/{0}".format(program_name))[0]
     directory = current_directory # where we save files
 
@@ -162,15 +162,21 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 if os.path.exists(logfile) and call and overwrite:
                     os.remove(logfile)
 
+                #time = 50
+                #memory = 2
                 bsub_command = ['bsub',
                                 '-J', job_name,
                                 '-R', 'rhel60',                                
                                 '-o', logfile]
                 if time > 0:
                     bsub_command += ['-W', str(time)]
+                #if memory > 1:
+                #    bsub_command += ['-n', str(memory),]
+                #                     # '-R', '"span[ptile={0}]"'.format(memory)]
                 if memory > 1:
-                    bsub_command += ['-n', str(memory),]
-                                     # '-R', '"span[ptile={0}]"'.format(memory)]
+                    bsub_command += ['-n', str(memory),
+                                      #'-R', '"span[ptile={0}]"'.format(memory), 'rhel60']
+                                      '-R', 'span[hosts=1]']
 
                 command = bsub_command + command
 
