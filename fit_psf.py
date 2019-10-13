@@ -15,7 +15,7 @@ import fitsio
 import galsim
 import piff
 
-from piff.util import hsm_error, hsm_third_moments, hsm_orthogonal, hsm_error_orthogonal, measure_snr
+from piff.util import measure_snr
 
 def fit_interp(stars, config_interp, psf, logger):
     # init interp
@@ -36,9 +36,9 @@ def fit_interp(stars, config_interp, psf, logger):
     psf.outliers = None
     psf.kwargs['outliers'] = 0
 
-def write_stars(stars, file_name, extname='psf_test_stars', logger=None):
+def write_stars(stars, file_name, extname='psf_test_stars'):
     fits = fitsio.FITS(file_name, mode='rw')
-    piff.Star.write(stars, fits, extname, logger=logger)
+    piff.Star.write(stars, fits, extname)
     fits.close()
 
 def read_stars(file_name, extname='psf_test_stars', logger=None):
@@ -262,16 +262,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 
         # separate stars
         # set seed
-        np.random.seed(12345)
-        test_fraction = config.get('test_fraction', 0.2)
-        test_indx = np.random.choice(len(stars), int(test_fraction * len(stars)), replace=False)
-        test_stars = []
-        train_stars = []
-        for star_i, star in enumerate(stars):
-            if star_i in test_indx:
-                test_stars.append(star)
-            else:
-                train_stars.append(star)
+
 
         # initialize psf
         psf = piff.PSF.process(config['psf'], logger=logger)
@@ -283,13 +274,13 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         if not is_optatmo:
             psf.fit(train_stars, wcs, pointing, logger=logger)
         else:
-            psf.fit(train_stars, test_stars, wcs, pointing, logger=logger)
+            psf.fit(stars, wcs, pointing, logger=logger)
             #test_stars = psf.test_stars
         logger.info('Fitted PSF!')
 
 
         # save optical pull cuts and other similar things; some of these will be used in doing cuts on exposures
-        if is_optatmo:
+        if is_optatmo and config['psf']['fit_optics_mode'] == "shape":
             logger.info('number of stars pre cut optical: {0}'.format(psf.number_of_stars_pre_cut_optical))
             logger.info('number of stars post cut optical: {0}'.format(psf.number_of_stars_post_cut_optical))
             number_of_outliers_optical = psf.number_of_outliers_optical
@@ -328,7 +319,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 if star_i % 100 == 0:
                     logger.info('Fitting star {0} of {1}'.format(star_i, len(psf.stars)))
                 try:
-                    model_fitted_star, results = psf.fit_model(star, params=params[star_i], vary_shape=True, vary_optics=False, logger=logger)
+                    model_fitted_star = psf.fit_model(star, params=params[star_i], logger=logger)
                     new_stars.append(model_fitted_star)
                 except (KeyboardInterrupt, SystemExit):
                     raise
@@ -349,7 +340,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 if star_i % 100 == 0:
                     logger.info('Fitting star {0} of {1}'.format(star_i, len(psf.test_stars)))
                 try:
-                    model_fitted_star, results = psf.fit_model(star, params=params[star_i], vary_shape=True, vary_optics=False, logger=logger)
+                    model_fitted_star = psf.fit_model(star, params=params[star_i], logger=logger)
                     new_stars.append(star)
                     dummy_test_stars.append(model_fitted_star)
                 except (KeyboardInterrupt, SystemExit):
@@ -433,7 +424,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         # and write test stars
         if is_optatmo:
             test_stars = psf.test_stars
-        write_stars(test_stars, output.file_name, logger=logger)
+        write_stars(test_stars, output.file_name)
 
     shape_keys = ['e0', 'e1', 'e2', 'zeta1', 'zeta2', 'delta1', 'delta2', 'orth4', 'orth6', 'orth8']
     shape_plot_keys = []
@@ -465,7 +456,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
             out_path = '{0}/{1}.piff'.format(directory, piff_name)
             psf.write(out_path, logger=logger)
             test_stars = psf.test_stars
-            write_stars(test_stars, out_path, logger=logger)
+            write_stars(test_stars, out_path)
 
             # evaluate
             logger.info('Evaluating {0}'.format(piff_name))
@@ -598,7 +589,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     new_stars = []
                     for star, param in zip(stars, params):
                         try:
-                            new_star, res = psf.fit_model(star, param, vary_shape=False, vary_optics=False, logger=logger)
+                            new_star = psf.reflux(star, param, logger=logger)
                             new_stars.append(new_star) 
                         except (KeyboardInterrupt, SystemExit):
                             raise
