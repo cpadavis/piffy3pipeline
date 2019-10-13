@@ -186,6 +186,7 @@ psf:
     higher_order_reference_wavefront_file: /nfs/slac/kipac/fs1/g/des/aresh/higher_order_reference_wavefront_pickle/decam_2012-nominalzernike-protocol2.pickle
     random_forest_shapes_model_pickles_location: /nfs/slac/kipac/fs1/g/des/aresh/random_forest_shapes_model_pickles
     atmosphere_model: vonkarman
+    init_with_rf: True
 
 
 output:

@@ -15,7 +15,7 @@ import fitsio
 import galsim
 import piff
 
-from piff.util import hsm_error, hsm_third_moments, hsm_fourth_moments, hsm_error_fourth_moments, hsm_orthogonal, hsm_error_orthogonal, measure_snr
+from piff.util import hsm_error, hsm_third_moments, hsm_orthogonal, hsm_error_orthogonal, measure_snr
 
 def fit_interp(stars, config_interp, psf, logger):
     # init interp

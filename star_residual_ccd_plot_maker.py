@@ -160,7 +160,7 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
             for sl, param in zip(range(0,len(stars_label)), params):
                 star_label = stars_label[sl]
                 try:
-                    pre_drawn_star = psf.fit_model(star_label, param, vary_shape=False, estimated_errorbars_not_required=True)[0]
+                    pre_drawn_star = psf.fit_model(star_label, param, vary_shape=False)[0]
                     pre_drawn_stars.append(pre_drawn_star)
                 except:
                     early_delete_list.append(sl)
