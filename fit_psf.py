@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import copy
 
 import os
+import sys
 import fitsio
 import galsim
 import piff
@@ -210,7 +211,7 @@ def plot_2dhist_shapes(shapes, keys, diff_mode=False, **kwargs):
 
     return fig, axs
 
-def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_interp_only=False):
+def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_interp_only=False, opt_only=False, no_opt=False):
     do_meanify = meanify_file_path != ''
     piff_name = config_file_name
     # load config file
@@ -251,72 +252,127 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         config['output']['dir'] = directory
         output = piff.Output.process(config['output'], logger=logger)
 
+    elif no_opt and is_optatmo:
+        # load base optics psf
+        out_path = '{0}/{1}_opt_only.piff'.format(directory, piff_name)
+        logger.info('Loading saved PSF at {0}'.format(out_path))
+        psf = piff.read(out_path)
+
+        # load images for train stars
+        logger.info('loading train stars')
+        psf.stars = load_star_images(psf.stars, config, logger=logger)
+
+        # load test stars and their images
+        logger.info('loading test stars')
+        test_stars = read_stars(out_path, logger=logger)
+        test_stars = load_star_images(test_stars, config, logger=logger)
+        psf.test_stars = test_stars
+
     elif (do_meanify or fit_interp_only) and not is_optatmo:
         # welp, not much to do here. shouldn't even have gotten here! :(
         logger.warning('Somehow passed the meanify to a non-optatmo argument. This should not happen.')
         return
 
     else:
-        # load stars
-        stars, wcs, pointing = piff.Input.process(config['input'], logger=logger)
+        if not (no_opt and is_optatmo):
+            # load stars
+            stars, wcs, pointing = piff.Input.process(config['input'], logger=logger)
 
-        # separate stars
-        # set seed
-
-
-        # initialize psf
-        psf = piff.PSF.process(config['psf'], logger=logger)
+            # separate stars
+            # set seed
 
 
-
-        # piffify
-        logger.info('Fitting PSF')
-        if not is_optatmo:
-            np.random.seed(12345)
-            test_fraction = config.get('test_fraction', 0.2)
-            test_indx = np.random.choice(len(stars), int(test_fraction * len(stars)), replace=False)
-            test_stars = []
-            train_stars = []
-            for star_i, star in enumerate(stars):
-                if star_i in test_indx:
-                    test_stars.append(star)
-                else:
-                    train_stars.append(star)
-            psf.fit(train_stars, wcs, pointing, logger=logger)
-        else:
-            psf.fit(stars, wcs, pointing, logger=logger)
-            #test_stars = psf.test_stars
-        logger.info('Fitted PSF!')
+            # initialize psf
+            psf = piff.PSF.process(config['psf'], logger=logger)
 
 
-        # save optical pull cuts and other similar things; some of these will be used in doing cuts on exposures
-        if is_optatmo and config['psf']['fit_optics_mode'] == "shape":
-            logger.info('number of stars pre cut optical: {0}'.format(psf.number_of_stars_pre_cut_optical))
-            logger.info('number of stars post cut optical: {0}'.format(psf.number_of_stars_post_cut_optical))
-            number_of_outliers_optical = psf.number_of_outliers_optical
-            pull_mean_optical = psf.pull_mean_optical
-            pull_rms_optical = psf.pull_rms_optical
-            pull_all_stars_optical = psf.pull_all_stars_optical
-            chisq_all_stars_optical = psf.chisq_all_stars_optical
-            total_redchi_across_iterations = psf.total_redchi_across_iterations
-            iterations_indices = range(0,len(total_redchi_across_iterations))
-            logger.info('Preparing to save npy files')
-            np.save("{0}/number_of_outliers_optical.npy".format(directory),np.array(number_of_outliers_optical))
-            np.save("{0}/pull_mean_optical.npy".format(directory),np.array(pull_mean_optical))    
-            np.save("{0}/pull_rms_optical.npy".format(directory),np.array(pull_rms_optical))
-            logger.info('Preparing to create optical pull histograms as well as chisq histogram')
-            for m, moment in enumerate(["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]):
+
+            # piffify
+            logger.info('Fitting PSF')
+            if not is_optatmo:
+                np.random.seed(12345)
+                test_fraction = config.get('test_fraction', 0.2)
+                test_indx = np.random.choice(len(stars), int(test_fraction * len(stars)), replace=False)
+                test_stars = []
+                train_stars = []
+                for star_i, star in enumerate(stars):
+                    if star_i in test_indx:
+                        test_stars.append(star)
+                    else:
+                        train_stars.append(star)
+                psf.fit(train_stars, wcs, pointing, logger=logger)
+            else:
+                psf.fit(stars, wcs, pointing, logger=logger)
+                #test_stars = psf.test_stars
+            logger.info('Fitted PSF!')
+
+
+            # save optical pull cuts and other similar things; some of these will be used in doing cuts on exposures
+            if is_optatmo and config['psf']['fit_optics_mode'] == "shape":
+                logger.info('number of stars pre cut optical: {0}'.format(psf.number_of_stars_pre_cut_optical))
+                logger.info('number of stars post cut optical: {0}'.format(psf.number_of_stars_post_cut_optical))
+                number_of_outliers_optical = psf.number_of_outliers_optical
+                pull_mean_optical = psf.pull_mean_optical
+                pull_rms_optical = psf.pull_rms_optical
+                pull_all_stars_optical = psf.pull_all_stars_optical
+                chisq_all_stars_optical = psf.chisq_all_stars_optical
+                total_redchi_across_iterations = psf.total_redchi_across_iterations
+                iterations_indices = range(0,len(total_redchi_across_iterations))
+                logger.info('Preparing to save npy files')
+                np.save("{0}/number_of_outliers_optical.npy".format(directory),np.array(number_of_outliers_optical))
+                np.save("{0}/pull_mean_optical.npy".format(directory),np.array(pull_mean_optical))    
+                np.save("{0}/pull_rms_optical.npy".format(directory),np.array(pull_rms_optical))
+                logger.info('Preparing to create optical pull histograms as well as chisq histogram')
+                for m, moment in enumerate(["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2"]):
+                    plt.figure()
+                    plt.hist(pull_all_stars_optical[:,m])
+                    plt.savefig("{0}/{1}_optical_pull_hist.png".format(directory, moment))
                 plt.figure()
-                plt.hist(pull_all_stars_optical[:,m])
-                plt.savefig("{0}/{1}_optical_pull_hist.png".format(directory, moment))
-            plt.figure()
-            plt.hist(chisq_all_stars_optical)
-            plt.savefig("{0}/optical_chisq_hist.png".format(directory))
-            plt.figure()
-            plt.scatter(x=iterations_indices,y=total_redchi_across_iterations)
-            plt.savefig("{0}/total_redchi_across_iterations.png".format(directory))
-            logger.info('Finished creating optical pull histograms as well as chisq histogram')
+                plt.hist(chisq_all_stars_optical)
+                plt.savefig("{0}/optical_chisq_hist.png".format(directory))
+                plt.figure()
+                plt.scatter(x=iterations_indices,y=total_redchi_across_iterations)
+                plt.savefig("{0}/total_redchi_across_iterations.png".format(directory))
+                logger.info('Finished creating optical pull histograms as well as chisq histogram')
 
+            # save optatmo_psf_kwargs to an npy file for easy access to optics fit params
+            if is_optatmo:
+                try:
+                    optatmo_psf_kwargs = psf.optatmo_psf_kwargs
+                    if True:
+                        print("making optatmo_psf_kwargs npy file")
+                        logger.info("making optatmo_psf_kwargs npy file")
+                        np.save("{0}/optatmo_psf_kwargs.npy".format(directory),optatmo_psf_kwargs)
+                    else:
+                        print("not making optatmo_psf_kwargs npy file") 
+                        logger.info("not making optatmo_psf_kwargs npy file")        
+                except:
+                    print("failed in either making or not making optatmo_psf_kwargs npy file")
+                    logger.info("failed in either making or not making optatmo_psf_kwargs npy file")
+
+            # save optical psf in case you just want to stop after the optical fit and pick up where you left off later
+            if is_optatmo:
+                # save psf
+                # make sure the output is in the right directory
+                config['output']['dir'] = directory
+                output = piff.Output.process(config['output'], logger=logger)
+                logger.info('Saving PSF')
+                # save fitted PSF
+                output_filename_dummy = copy.deepcopy(output.file_name)
+                output_filename_core = output_filename_dummy.split('.')[0]
+                output_filename_filetype = output_filename_dummy.split('.')[1]
+                output_filename_opt_only = output_filename_core + "_opt_only." + output_filename_filetype
+                psf.write(output_filename_opt_only, logger=logger)
+
+                # and write test stars
+                test_stars = psf.test_stars
+                write_stars(test_stars, output_filename_opt_only)
+
+
+        # stop here right after the optical fit if is_optatmo and you request to do only the optical fit
+        if opt_only and is_optatmo:
+            sys.exit()
+            
 
         # fit atmosphere parameters (for train stars)
         if is_optatmo:
@@ -491,18 +547,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 ########################################################################
 
             logger.info('Finished saving stars to npy files')
-            try:
-                optatmo_psf_kwargs = psf.optatmo_psf_kwargs
-                if piff_name == "psf_optatmo_const_gpvonkarman":
-                    print("making optatmo_psf_kwargs npy file")
-                    logger.info("making optatmo_psf_kwargs npy file")
-                    np.save("{0}/optatmo_psf_kwargs.npy".format(directory),optatmo_psf_kwargs)
-                else:
-                    print("not making optatmo_psf_kwargs npy file") 
-                    logger.info("not making optatmo_psf_kwargs npy file")        
-            except:
-                print("failed in either making or not making optatmo_psf_kwargs npy file")
-                logger.info("failed in either making or not making optatmo_psf_kwargs npy file")
+
             logger.info('Preparing to draw model stars')
             for stars, label in zip([psf.stars, psf.test_stars], ['train', 'test']):
 
@@ -666,6 +711,8 @@ if __name__ == '__main__':
     parser.add_argument('--meanify_file_path', action='store', dest='meanify_file_path',
                         default='',
                         help='path to meanify file. If not specified, or if not using optatmo, then ignored')
+    parser.add_argument('--opt_only', default="False")
+    parser.add_argument('--no_opt', default="False")
     options = parser.parse_args()
     kwargs = vars(options)
     fit_psf(**kwargs)

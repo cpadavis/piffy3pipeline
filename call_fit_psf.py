@@ -23,10 +23,12 @@ def save_config(config, file_name):
     with open(file_name, 'w') as f:
         f.write(yaml.dump(config, default_flow_style=False))
 
-def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_together):
+def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_together, opt_only, no_opt):
 
+    if opt_only and (no_opt or fit_interp_only or meanify):
+        raise ValueError('You cannot both do only the optical fit and skip the optical fit.')
     run_config = piff.read_config(run_config_path)
-    if meanify or fit_interp_only:
+    if meanify or fit_interp_only or no_opt:
         psf_files = run_config['psf_optics_files']
     else:
         psf_files = run_config['psf_optics_files'] + run_config['psf_other_files']
@@ -120,6 +122,10 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 command = command + ['--meanify_file_path', meanify_file_path]
             if fit_interp_only:
                 command = command + ['--fit_interp_only']
+            if opt_only:
+                command = command + ['--opt_only']
+            if no_opt:
+                command = command + ['--no_opt']
 
             # call command
             skip_iter = False
@@ -217,6 +223,8 @@ if __name__ == '__main__':
                         help='Run config to load up and do')
     parser.add_argument('--band')
     parser.add_argument('--bands_meanified_together', default="True")
+    parser.add_argument('--opt_only', default="False")
+    parser.add_argument('--no_opt', default="False")
     options = parser.parse_args()
     kwargs = vars(options)
     print("hello")
