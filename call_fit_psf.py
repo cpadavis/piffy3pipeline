@@ -25,6 +25,24 @@ def save_config(config, file_name):
 
 def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_together, opt_only, no_opt):
 
+    if bands_meanified_together!="True" and bands_meanified_together!="False":
+        raise ValueError('bands_meanified_together must be True or False')
+    if opt_only!="True" and opt_only!="False":
+        raise ValueError('opt_only must be True or False')
+    if no_opt!="True" and no_opt!="False":
+        raise ValueError('no_opt must be True or False')
+    if bands_meanified_together == "True":
+        bands_meanified_together = True
+    else:
+        bands_meanified_together = False
+    if opt_only == "True":
+        opt_only = True
+    else:
+        opt_only = False
+    if no_opt == "True":
+        no_opt = True
+    else:
+        no_opt = False
     if opt_only and (no_opt or fit_interp_only or meanify):
         raise ValueError('You cannot both do only the optical fit and skip the optical fit.')
     run_config = piff.read_config(run_config_path)
@@ -65,7 +83,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
         for psf_file in psf_files:
             psf_name = psf_file.split('.yaml')[0].split('/')[-1]
             if meanify:
-                if bands_meanified_together=="True":
+                if bands_meanified_together==True:
                     meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, band)
                 else:
                     meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, filter_name)                    
