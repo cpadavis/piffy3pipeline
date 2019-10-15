@@ -272,6 +272,16 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
         # piffify
         logger.info('Fitting PSF')
         if not is_optatmo:
+            np.random.seed(12345)
+            test_fraction = config.get('test_fraction', 0.2)
+            test_indx = np.random.choice(len(stars), int(test_fraction * len(stars)), replace=False)
+            test_stars = []
+            train_stars = []
+            for star_i, star in enumerate(stars):
+                if star_i in test_indx:
+                    test_stars.append(star)
+                else:
+                    train_stars.append(star)
             psf.fit(train_stars, wcs, pointing, logger=logger)
         else:
             psf.fit(stars, wcs, pointing, logger=logger)
