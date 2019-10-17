@@ -212,11 +212,11 @@ def plot_2dhist_shapes(shapes, keys, diff_mode=False, **kwargs):
     return fig, axs
 
 def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_interp_only=False, opt_only="False", no_opt="False"):
-    if opt_only = "True":
+    if opt_only == "True":
         opt_only = True
     else:
         opt_only = False
-    if no_opt = "True":
+    if no_opt == "True":
         no_opt = True
     else:
         no_opt = False
