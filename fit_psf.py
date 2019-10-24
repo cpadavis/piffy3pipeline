@@ -310,6 +310,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                         train_stars.append(star)
                 psf.fit(train_stars, wcs, pointing, logger=logger)
             else:
+                np.random.seed(12345)
                 psf.fit(stars, wcs, pointing, logger=logger)
                 #test_stars = psf.test_stars
             logger.info('Fitted PSF!')
