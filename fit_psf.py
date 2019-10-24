@@ -44,7 +44,7 @@ def write_stars(stars, file_name, extname='psf_test_stars'):
 
 def read_stars(file_name, extname='psf_test_stars', logger=None):
     fits = fitsio.FITS(file_name, mode='rw')
-    stars = piff.Star.read(fits, extname, logger=logger)
+    stars = piff.Star.read(fits, extname)
     fits.close()
     return stars
 
