@@ -141,9 +141,9 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             if fit_interp_only:
                 command = command + ['--fit_interp_only']
             if opt_only:
-                command = command + ['--opt_only']
+                command = command + ['--opt_only', "True"]
             if no_opt:
-                command = command + ['--no_opt']
+                command = command + ['--no_opt', "True"]
 
             # call command
             skip_iter = False
