@@ -79,7 +79,6 @@ def flag_exposure_outliers():
     for moment in moments:
         quality_control_list_dictionary["number_of_outliers_{0}_optical".format(moment)] = []
         quality_control_list_dictionary["pull_rms_{0}_optical".format(moment)] = []
-    exposures_without_all_metrics = []
     for exposure_i, exposure in enumerate(exposures):
         try:
             directory = "{0}/00{1}".format(core_directory, exposure)
@@ -90,7 +89,7 @@ def flag_exposure_outliers():
                 quality_control_list_dictionary["number_of_outliers_{0}_optical".format(moment)].append(np.load("{0}/number_of_outliers_optical.npy".format(directory))[m])
                 quality_control_list_dictionary["pull_rms_{0}_optical".format(moment)].append(np.load("{0}/pull_rms_optical.npy".format(directory))[m])
         except:
-            exposures_without_all_metrics.append(exposure)
+            pass
     quality_control_list = []
     for m, moment in enumerate(moments):
         quality_control_list_dictionary["number_of_outliers_{0}_optical".format(moment)] = np.array(quality_control_list_dictionary["number_of_outliers_{0}_optical".format(moment)])

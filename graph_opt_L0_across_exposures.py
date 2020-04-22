@@ -25,7 +25,7 @@ from call_angular_moment_residual_plot_maker_part2 import find_filter_name_or_sk
 
 
 def make_call(band):
-    core_directory, source_directory, very_original_exposures, graph_values_directory, graph_directory = find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(graph_type="opt_L0_plots_across_exposures", set_up_graph_directory_and_graph_values_directory=True)
+    core_directory, source_directory, very_original_exposures, graph_values_directory, graph_directory = find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(psf_type="anytype", graph_type="opt_L0_plots_across_exposures", set_up_graph_directory_and_graph_values_directory=True)
     try:
         acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
         original_exposures = []

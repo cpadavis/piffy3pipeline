@@ -35,9 +35,7 @@ def make_call(band, psf_type_difference, psf_type_zernike):
     graph_directory = "{0}/multi_exposure_graphs/{1}_difference_{2}_zernike_moment_residual_vs_zernike_plots_across_exposures".format(core_directory, psf_type_difference, psf_type_zernike)
     os.system("mkdir {0}".format(graph_directory))
     source_directory = np.load("{0}/source_directory_name.npy".format(core_directory))[0]
-    print("source_directory: {0}".format(source_directory))
     very_original_exposures = glob.glob("{0}/*".format(source_directory))
-    print("very_original_exposures {0}".format(very_original_exposures))
     very_original_exposures = [very_original_exposure.split("/")[-1] for very_original_exposure in very_original_exposures]
     try:
         acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
@@ -45,11 +43,7 @@ def make_call(band, psf_type_difference, psf_type_zernike):
         for very_original_exposure in very_original_exposures:
             if very_original_exposure in acceptable_exposures:
                 original_exposures.append(very_original_exposure)
-        print("very_original_exposures {0}".format(very_original_exposures))
-        print("original_exposures {0}".format(original_exposures))
     except:
-        print("very_original_exposures {0}".format(very_original_exposures))
-        print("original_exposures {0}".format(original_exposures))
         original_exposures = very_original_exposures
     if band=="all":
         exposures = original_exposures

@@ -27,7 +27,7 @@ from call_angular_moment_residual_plot_maker_part2 import find_core_directory_so
 
 
 def make_call(psf_type, band):
-    core_directory, source_directory, very_original_exposures, graph_values_directory, graph_directory = find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(graph_type="snr_moment_residual_plots_averaged_across_exposures", set_up_graph_directory_and_graph_values_directory=True)
+    core_directory, source_directory, very_original_exposures, graph_values_directory, graph_directory = find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(psf_type=psf_type, graph_type="snr_moment_residual_plots_averaged_across_exposures", set_up_graph_directory_and_graph_values_directory=True)
     try:
         acceptable_exposures = np.load("{0}/acceptable_exposures.npy".format(core_directory))
         original_exposures = []

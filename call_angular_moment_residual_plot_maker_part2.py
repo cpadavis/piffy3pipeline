@@ -24,7 +24,7 @@ from matplotlib.figure import Figure
 
 
 
-def find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(graph_type=None, set_up_graph_directory_and_graph_values_directory=False):
+def find_core_directory_source_directory_glob_exposures_and_possibly_set_up_graph_directory_and_graph_values_directory(psf_type=None, graph_type=None, set_up_graph_directory_and_graph_values_directory=False):
     #This function finds the appropriate exposures and sets up and finds directories
     core_directory = os.path.realpath(__file__)
     program_name = core_directory.split("/")[-1]

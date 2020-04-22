@@ -164,7 +164,7 @@ psf:
         fix_zPupil037_zFocal003: True
 
 
-    max_shapes: [1.5, 0.12, 0.12, 0.15, 0.15, 0.15, 0.15, 1.5, 5.0, 50.0]
+    #max_shapes: [1.5, 0.12, 0.12, 0.15, 0.15, 0.15, 0.15, 1.5, 5.0, 50.0]
     shape_weights: [0.2, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
     reference_wavefront_zernikes_list: [4, 5, 6, 7, 8, 9, 10, 11]
     higher_order_reference_wavefront_zernikes_list: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
@@ -224,11 +224,20 @@ output:
 # about the progress.
 verbose: 2
 
-time: 7000
-memory: 6
+time: 600
+memory: 2
 test_fraction: 0.2 # save 20 percent
 
 interps:
     const_gpvonkarman:
-        type: GPInterp2pcf
-        kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5))
+        #type: GPInterp2pcf
+        #kernel: 1e-6 + 1e-2 * VonKarman(1e2, (1e-8, 1e5)
+        kernel: 1e-2 * AnisotropicVonKarman(invLam=np.array([[1./3000.**2,0],[0,1./3000.**2]]))
+        optimize: true
+        optimizer: two-pcf
+        anisotropic: true
+        nbins: 21
+        min_sep: 0.
+        max_sep: 1020.
+        p0: [3000., 0., 0.]
+        type: GPInterp

@@ -134,7 +134,7 @@ def call_meanify(run_config_path, overwrite, n, band):
         
         print("made u v stuff")
 
-        {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
+        kwargs_in = {'gridsize': 200, 'vmin': -0.025, 'vmax': 0.025}
         for key in ['atmo_size', 'atmo_g1', 'atmo_g2']:
             plt.figure()
             C_i = shapes[key]
