@@ -31,12 +31,12 @@ def count_successful_fits_with_meanify():
     for exposure_i, exposure in enumerate(acceptable_exposures):
         try:
             directory = "{0}/00{1}".format(core_directory, exposure)
-            shapes = piff.read("{0}/psf_optatmo_const_gpvonkarman_meanified.piff".format(directory))
-            number_of_successful_fits_with_meanify = number_of_successful_fits_with_meanify + 1
-            #if os.path.isfile("{0}/psf_optatmo_const_gpvonkarman_meanified.piff".format(directory)):
-            #    number_of_successful_fits_with_meanify = number_of_successful_fits_with_meanify + 1
-            #else:
-            #    print("failed fit for {0}".format(exposure))
+            #shapes = piff.read("{0}/psf_optatmo_const_gpvonkarman_meanified.piff".format(directory))
+            #number_of_successful_fits_with_meanify = number_of_successful_fits_with_meanify + 1
+            if os.path.isfile("{0}/psf_optatmo_const_gpvonkarman_meanified.piff".format(directory)):
+                number_of_successful_fits_with_meanify = number_of_successful_fits_with_meanify + 1
+            else:
+                print("failed fit for {0}".format(exposure))
         except:
             print("failed fit for {0}".format(exposure))
     print("number_of_successful_fits_with_meanify: {0}".format(number_of_successful_fits_with_meanify))

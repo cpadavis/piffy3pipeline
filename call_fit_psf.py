@@ -23,7 +23,7 @@ def save_config(config, file_name):
     with open(file_name, 'w') as f:
         f.write(yaml.dump(config, default_flow_style=False))
 
-def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_together, opt_only, no_opt):
+def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_together, opt_only, no_opt, no_interp):
 
     if bands_meanified_together!="True" and bands_meanified_together!="False":
         raise ValueError('bands_meanified_together must be True or False')
@@ -31,6 +31,8 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
         raise ValueError('opt_only must be True or False')
     if no_opt!="True" and no_opt!="False":
         raise ValueError('no_opt must be True or False')
+    if no_interp!="True" and no_interp!="False":
+        raise ValueError('no_interp must be True or False')
     if bands_meanified_together == "True":
         bands_meanified_together = True
     else:
@@ -43,8 +45,15 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
         no_opt = True
     else:
         no_opt = False
+    if no_interp == "True":
+        no_interp = True
+    else:
+        no_interp = False
+
     if opt_only and (no_opt or fit_interp_only or meanify):
         raise ValueError('You cannot both do only the optical fit and skip the optical fit.')
+    if no_interp and (fit_interp_only or meanify):
+        raise ValueError('You cannot both do only the atmo interp and skip the atmo interp.')
     run_config = piff.read_config(run_config_path)
     if meanify or fit_interp_only or no_opt:
         psf_files = run_config['psf_optics_files']
@@ -144,6 +153,8 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
                 command = command + ['--opt_only', "True"]
             if no_opt:
                 command = command + ['--no_opt', "True"]
+            if no_interp:
+                command = command + ['--no_interp', "True"]
 
             # call command
             skip_iter = False
@@ -243,6 +254,7 @@ if __name__ == '__main__':
     parser.add_argument('--bands_meanified_together', default="True")
     parser.add_argument('--opt_only', default="False")
     parser.add_argument('--no_opt', default="False")
+    parser.add_argument('--no_interp', default="False")
     options = parser.parse_args()
     kwargs = vars(options)
     print("hello")

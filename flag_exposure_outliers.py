@@ -64,14 +64,14 @@ def flag_exposure_outliers():
     acceptable_exposures = np.array(exposures_with_all_metrics)[conds_mad]
     exposures_removed_by_conds_mad = np.array(exposures_with_all_metrics)[~conds_mad]
     print("")
-    print("exposures_without_all_metrics : {0}".format(exposures_without_all_metrics))
-    print("exposures_with_all_metrics : {0}".format(exposures_with_all_metrics))
-    np.save("{0}/acceptable_exposures.npy".format(core_directory),acceptable_exposures)
+    print("exposures_without_all_metrics : {0}".format(sorted(exposures_without_all_metrics)))
+    print("exposures_with_all_metrics : {0}".format(sorted(exposures_with_all_metrics)))
+    np.save("{0}/acceptable_exposures.npy".format(core_directory),sorted(acceptable_exposures))
     print("")
     print("acceptable_exposures: ")
-    print(acceptable_exposures)
+    print(sorted(acceptable_exposures))
     print("exposures_removed_by_conds_mad: ")
-    print(exposures_removed_by_conds_mad)
+    print(sorted(exposures_removed_by_conds_mad))
 
 
     #here, plots are made of the number of outliers and pull rms 

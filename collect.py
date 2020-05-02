@@ -85,7 +85,13 @@ def run_onedhists(files, plotdict):
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
         # load up the dataframe containing the shapes as measured with hsm
-        shapes, nocut_shapes, conds = load_shapes(fo)
+        #shapes, nocut_shapes, conds = load_shapes(fo)
+        try:
+             shapes, nocut_shapes, conds = load_shapes(fo)
+        except:
+            print("failure to generate plots of something vs data_flux for a particular exposure!")
+            print("fo: {0}".format(fo))
+            continue
 
         # iterate through plotdict to do the summaries
         for key in plotdict:
@@ -165,13 +171,13 @@ def run_rho(files, plot_path, uv_coord):
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
         # load up the dataframe containing the shapes as measured with hsm
-        shapes, nocut_shapes, conds = load_shapes(fo)
-        #try:
-             #shapes, nocut_shapes, conds = load_shapes(fo)
-        #except:
-        #    print("failure to generate rho statistics for a particular exposure!")
-        #    print("fo: {0}".format(fo))
-        #    continue
+        #shapes, nocut_shapes, conds = load_shapes(fo)
+        try:
+             shapes, nocut_shapes, conds = load_shapes(fo)
+        except:
+            print("failure to generate rho statistics for a particular exposure!")
+            print("fo: {0}".format(fo))
+            continue
         all_shapes.append(shapes)
     print('concatenating')
     shapes = pd.concat(all_shapes, ignore_index=True)
@@ -356,7 +362,13 @@ def run_twodhists(files, file_out_base, sep=50):
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print('doing {0} out of {1}:'.format(file_indx + 1, len(files)))
         # load up the dataframe containing the shapes as measured with hsm
-        shapes, nocut_shapes, conds = load_shapes(fo)
+        #shapes, nocut_shapes, conds = load_shapes(fo)
+        try:
+             shapes, nocut_shapes, conds = load_shapes(fo)
+        except:
+            print("failure to generate color plots for a particular exposure!")
+            print("fo: {0}".format(fo))
+            continue
         if (file_indx + 1) % int(max([len(files) * 0.05, 1])) == 0:
             print(len(conds), np.sum(conds))
 
