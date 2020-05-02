@@ -23,37 +23,14 @@ def save_config(config, file_name):
     with open(file_name, 'w') as f:
         f.write(yaml.dump(config, default_flow_style=False))
 
-def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_together, opt_only, no_opt, no_interp):
+def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_separately, opt_only, no_opt, no_interp, no_final_graphs, final_graphs_only):
 
-    if bands_meanified_together!="True" and bands_meanified_together!="False":
-        raise ValueError('bands_meanified_together must be True or False')
-    if opt_only!="True" and opt_only!="False":
-        raise ValueError('opt_only must be True or False')
-    if no_opt!="True" and no_opt!="False":
-        raise ValueError('no_opt must be True or False')
-    if no_interp!="True" and no_interp!="False":
-        raise ValueError('no_interp must be True or False')
-    if bands_meanified_together == "True":
-        bands_meanified_together = True
-    else:
-        bands_meanified_together = False
-    if opt_only == "True":
-        opt_only = True
-    else:
-        opt_only = False
-    if no_opt == "True":
-        no_opt = True
-    else:
-        no_opt = False
-    if no_interp == "True":
-        no_interp = True
-    else:
-        no_interp = False
-
-    if opt_only and (no_opt or fit_interp_only or meanify):
+    if opt_only and (no_opt or fit_interp_only or meanify final_graphs_only):
         raise ValueError('You cannot both do only the optical fit and skip the optical fit.')
-    if no_interp and (fit_interp_only or meanify):
-        raise ValueError('You cannot both do only the atmo interp and skip the atmo interp.')
+    if no_interp and (fit_interp_only or meanify or final_graphs_only):
+        raise ValueError('You cannot both do only the atmo interp or part of it (like the final graphs) and skip the atmo interp.')
+    if no_final_graphs and final_graphs_only:
+        raise ValueError('You cannot both do only the final graphs and skip the final graphs.')
     run_config = piff.read_config(run_config_path)
     if meanify or fit_interp_only or no_opt:
         psf_files = run_config['psf_optics_files']
@@ -92,7 +69,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
         for psf_file in psf_files:
             psf_name = psf_file.split('.yaml')[0].split('/')[-1]
             if meanify:
-                if bands_meanified_together==True:
+                if not bands_meanified_separately:
                     meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, band)
                 else:
                     meanify_file_path = '{0}/meanify_{1}_{2}.fits'.format(directory, psf_name, filter_name)                    
@@ -150,11 +127,15 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             if fit_interp_only:
                 command = command + ['--fit_interp_only']
             if opt_only:
-                command = command + ['--opt_only', "True"]
+                command = command + ['--opt_only']
             if no_opt:
-                command = command + ['--no_opt', "True"]
+                command = command + ['--no_opt']
             if no_interp:
-                command = command + ['--no_interp', "True"]
+                command = command + ['--no_interp']
+            if no_final_graphs:
+                command = command + ['--no_final_graphs']
+            if final_graphs_only:
+                command = command + ['--final_graphs_only']
 
             # call command
             skip_iter = False
@@ -245,16 +226,24 @@ if __name__ == '__main__':
     parser.add_argument('--meanify', action='store_true', dest='meanify',
                         help='look for meanify outputs and do those')
     parser.add_argument('--fit_interp_only', action='store_true', dest='fit_interp_only',
-                        help='if a PSF file exists, load it up')
+                        help='start fit after (previously done) individual atmo star fit')
     parser.add_argument('-n', action='store', dest='nmax', type=int, default=0, help='Number of fits to run')
     parser.add_argument(action='store', dest='run_config_path',
                         default='config.yaml',
                         help='Run config to load up and do')
     parser.add_argument('--band')
-    parser.add_argument('--bands_meanified_together', default="True")
-    parser.add_argument('--opt_only', default="False")
-    parser.add_argument('--no_opt', default="False")
-    parser.add_argument('--no_interp', default="False")
+    parser.add_argument('--bands_meanified_separately', action='store_true', dest='bands_meanified_separately',
+                        help='one can either use a meanify file for multiple bands together or multiple meanify files ,one for each band; default is the former unless this flag is used')
+    parser.add_argument('--opt_only', action='store_true', dest='opt_only',
+                        help='only do the optical fit')
+    parser.add_argument('--no_opt', action='store_true', dest='no_opt',
+                        help='start fit after (previously done) optical fit')
+    parser.add_argument('--no_interp', action='store_true', dest='no_interp',
+                        help='stop fit right before the atmo interpolation')
+    parser.add_argument('--no_final_graphs', action='store_true', dest='no_final_graphs',
+                        help='stop fit right before the final graphs are made')
+    parser.add_argument('--final_graphs_only', action='store_true', dest='final_graphs_only',
+                        help='(having previously done everything else), do just the final graphs')
     options = parser.parse_args()
     kwargs = vars(options)
     print("hello")

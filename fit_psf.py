@@ -84,6 +84,192 @@ def load_star_images(stars, config, logger=None):
 
     return loaded_stars
 
+# this function graphs the stars' data, model, difference, error, and pull images in histograms.
+def make_oned_hists_pdf(shapes, directory, label, piff_name):
+    list_of_moments = ["e0", "e1", "e2", "zeta1", "zeta2", "delta1", "delta2", "orth4", "orth6", "orth8"]
+    list_of_moment_arrays = []
+    for moment in list_of_moments:
+        data_moments = shapes["data_{0}".format(moment)].values
+        model_moments = shapes["model_{0}".format(moment)].values
+        difference_moments = shapes["d{0}".format(moment)].values
+        error_moments = shapes["data_sigma_{0}".format(moment)].values
+        pull_moments = difference_moments / error_moments
+        moment_array = np.array([data_moments, model_moments, difference_moments, error_moments, pull_moments])
+        list_of_moment_arrays.append(moment_array)
+
+
+    fig, axss = plt.subplots(nrows=10, ncols=5, figsize=(50, 100))#, squeeze=False)
+    for r, moment_array, moment in zip(list(range(0,len(list_of_moment_arrays))), list_of_moment_arrays, list_of_moments):
+        
+        data_moment_array = moment_array[0]
+        model_moment_array = moment_array[1]  
+        difference_moment_array = moment_array[2] 
+        error_moment_array = moment_array[3]   
+        pull_moment_array = moment_array[4]          
+        
+        if moment == "e0":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.003),0.003))                
+            axss[r][0].set_xlim(0.36,0.48) 
+        if moment == "e1":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.0035),0.0035))    
+            axss[r][0].set_xlim(-0.07,0.07) 
+        if moment == "e2":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.003),0.003))    
+            axss[r][0].set_xlim(-0.06,0.06)  
+        if moment == "zeta1":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.0005),0.0005))    
+            axss[r][0].set_xlim(-0.01,0.01) 
+        if moment == "zeta2":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.0005),0.0005))    
+            axss[r][0].set_xlim(-0.005,0.015) 
+        if moment == "delta1":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.00075),0.00075))    
+            axss[r][0].set_xlim(-0.015,0.015)  
+        if moment == "delta2":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.00075),0.00075))    
+            axss[r][0].set_xlim(-0.015,0.015) 
+        if moment == "orth4":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.01),0.01))    
+            axss[r][0].set_xlim(4.1,4.5) 
+        if moment == "orth6":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.0875),0.0875))    
+            axss[r][0].set_xlim(13.0,16.5) 
+        if moment == "orth8":
+            axss[r][0].hist(data_moment_array, bins=np.arange(np.min(data_moment_array),np.max(data_moment_array+0.875),0.875))    
+            axss[r][0].set_xlim(55.0,90.0) 
+        axss[r][0].set_title("data {0} histogram".format(moment))
+        
+        if moment == "e0":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.003),0.003))    
+            axss[r][1].set_xlim(0.36,0.48) 
+        if moment == "e1":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.0035),0.0035))    
+            axss[r][1].set_xlim(-0.07,0.07) 
+        if moment == "e2":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.003),0.003))    
+            axss[r][1].set_xlim(-0.06,0.06)  
+        if moment == "zeta1":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.0005),0.0005))    
+            axss[r][1].set_xlim(-0.01,0.01) 
+        if moment == "zeta2":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.0005),0.0005))    
+            axss[r][1].set_xlim(-0.005,0.015) 
+        if moment == "delta1":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.00075),0.00075))    
+            axss[r][1].set_xlim(-0.015,0.015)  
+        if moment == "delta2":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.00075),0.00075))    
+            axss[r][1].set_xlim(-0.015,0.015) 
+        if moment == "orth4":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.01),0.01))    
+            axss[r][1].set_xlim(4.1,4.5) 
+        if moment == "orth6":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.0875),0.0875))    
+            axss[r][1].set_xlim(13.0,16.5) 
+        if moment == "orth8":
+            axss[r][1].hist(model_moment_array, bins=np.arange(np.min(model_moment_array),np.max(model_moment_array+0.875),0.875))    
+            axss[r][1].set_xlim(55.0,90.0) 
+        axss[r][1].set_title("model {0} histogram".format(moment))
+        
+        if moment == "e0":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.00164),0.00164))    
+            axss[r][2].set_xlim(-0.04,0.04) 
+        if moment == "e1":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.00164),0.00164))    
+            axss[r][2].set_xlim(-0.04,0.04) 
+        if moment == "e2":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.00164),0.00164))    
+            axss[r][2].set_xlim(-0.04,0.04) 
+        if moment == "zeta1":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.0005),0.0005))    
+            axss[r][2].set_xlim(-0.01,0.01) 
+        if moment == "zeta2":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.0005),0.0005))    
+            axss[r][2].set_xlim(-0.01,0.01) 
+        if moment == "delta1":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.00075),0.00075))    
+            axss[r][2].set_xlim(-0.015,0.015) 
+        if moment == "delta2":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.00075),0.00075))    
+            axss[r][2].set_xlim(-0.015,0.015) 
+        if moment == "orth4":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.01),0.01))    
+            axss[r][2].set_xlim(-0.2,0.2) 
+        if moment == "orth6":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.075),0.075))    
+            axss[r][2].set_xlim(-1.5,1.5) 
+        if moment == "orth8":
+            axss[r][2].hist(difference_moment_array, bins=np.arange(np.min(difference_moment_array),np.max(difference_moment_array+0.75),0.75))    
+            axss[r][2].set_xlim(-15.0,15.0) 
+        axss[r][2].set_title("difference {0} histogram".format(moment))
+        
+        if moment == "e0":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.001/20.0),0.001/20.0))    
+            axss[r][3].set_xlim(0.0,0.02) 
+        if moment == "e1":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.001/20.0),0.001/20.0))    
+            axss[r][3].set_xlim(0.0,0.02) 
+        if moment == "e2":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.001/20.0),0.001/20.0))    
+            axss[r][3].set_xlim(0.0,0.02) 
+        if moment == "zeta1":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.0005/20.0),0.0005/20.0))    
+            axss[r][3].set_xlim(0.0,0.01) 
+        if moment == "zeta2":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.0005/20.0),0.0005/20.0))    
+            axss[r][3].set_xlim(0.0,0.01)
+        if moment == "delta1":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.0005/20.0),0.0005/20.0))    
+            axss[r][3].set_xlim(0.0,0.01) 
+        if moment == "delta2":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.0005/20.0),0.0005/20.0))    
+            axss[r][3].set_xlim(0.0,0.01) 
+        if moment == "orth4":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.00375/20.0),0.00375/20.0))    
+            axss[r][3].set_xlim(0.0,0.075) 
+        if moment == "orth6":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.0375/20.0),0.0375/20.0))    
+            axss[r][3].set_xlim(0.0,0.75) 
+        if moment == "orth8":
+            axss[r][3].hist(error_moment_array, bins=np.arange(np.min(error_moment_array),np.max(error_moment_array+0.375/20.0),0.375/20.0))    
+            axss[r][3].set_xlim(0.0,7.5) 
+        axss[r][3].set_title("error {0} histogram".format(moment))
+        
+        if moment == "e0":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.2),0.2))    
+            axss[r][4].set_xlim(-4.0,4.0) 
+        if moment == "e1":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.15),0.15))    
+            axss[r][4].set_xlim(-3.0,3.0) 
+        if moment == "e2":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.15),0.15))    
+            axss[r][4].set_xlim(-3.0,3.0) 
+        if moment == "zeta1":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.1),0.1))    
+            axss[r][4].set_xlim(-2.0,2.0) 
+        if moment == "zeta2":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.1),0.1))    
+            axss[r][4].set_xlim(-2.0,2.0) 
+        if moment == "delta1":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.15),0.15))    
+            axss[r][4].set_xlim(-3.0,3.0) 
+        if moment == "delta2":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.15),0.15))    
+            axss[r][4].set_xlim(-3.0,3.0) 
+        if moment == "orth4":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.15),0.15))    
+            axss[r][4].set_xlim(-3.0,3.0) 
+        if moment == "orth6":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.15),0.15))    
+            axss[r][4].set_xlim(-3.0,3.0) 
+        if moment == "orth8":
+            axss[r][4].hist(pull_moment_array, bins=np.arange(np.min(pull_moment_array),np.max(pull_moment_array+0.15),0.15))    
+            axss[r][4].set_xlim(-3.0,3.0) 
+        axss[r][4].set_title("pull {0} histogram".format(moment))
+        
+    #plt.tight_layout()
+    fig.savefig("{0}/{1}_stars_oned_hists_{2}.pdf".format(directory,label, piff_name))
+
 # TODO: make sure this back-up function always matches the version in optatmo_psf.py from PIFF proper
 def measure_shape_orthogonal(star, logger=None):
     """Measure the shape of a star using the HSM algorithm.
@@ -301,19 +487,7 @@ def plot_2dhist_shapes(shapes, keys, diff_mode=False, **kwargs):
 
 
 # function for doing the fit.
-def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_interp_only=False, opt_only="False", no_opt="False", no_interp="False"):
-    if opt_only == "True":
-        opt_only = True
-    else:
-        opt_only = False
-    if no_opt == "True":
-        no_opt = True
-    else:
-        no_opt = False
-    if no_interp == "True":
-        no_interp = True
-    else:
-        no_interp = False
+def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_interp_only=False, opt_only=False, no_opt=False, no_interp=False, no_final_graphs = False, final_graphs_only = False):
     do_meanify = meanify_file_path != ''
     piff_name = config_file_name
     # load config file
@@ -336,25 +510,26 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 
     import time
 
-    if (do_meanify or fit_interp_only) and is_optatmo:
-        # load base optics psf
-        out_path = '{0}/{1}.piff'.format(directory, piff_name)
-        logger.info('Loading saved PSF at {0}'.format(out_path))
-        psf = piff.read(out_path)
+    if (do_meanify or fit_interp_only or final_graphs_only) and is_optatmo:
+        if not final_graphs_only:
+            # load base optics psf
+            out_path = '{0}/{1}.piff'.format(directory, piff_name)
+            logger.info('Loading saved PSF at {0}'.format(out_path))
+            psf = piff.read(out_path)
 
-        # load images for train stars
-        logger.info('loading train stars')
-        psf.stars = load_star_images(psf.stars, config, logger=logger)
+            # load images for train stars
+            logger.info('loading train stars')
+            psf.stars = load_star_images(psf.stars, config, logger=logger)
 
-        # load test stars and their images
-        logger.info('loading test stars')
-        test_stars = read_stars(out_path, logger=logger)
-        test_stars = load_star_images(test_stars, config, logger=logger)
-        psf.test_stars = test_stars
+            # load test stars and their images
+            logger.info('loading test stars')
+            test_stars = read_stars(out_path, logger=logger)
+            test_stars = load_star_images(test_stars, config, logger=logger)
+            psf.test_stars = test_stars
 
-        # make output
-        config['output']['dir'] = directory
-        output = piff.Output.process(config['output'], logger=logger)
+            # make output
+            config['output']['dir'] = directory
+            output = piff.Output.process(config['output'], logger=logger)
 
     elif (do_meanify or fit_interp_only) and not is_optatmo:
         # welp, not much to do here. shouldn't even have gotten here! :(
@@ -585,6 +760,9 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     shapes.to_hdf('{0}/shapes_{1}_{2}_opt_only.h5'.format(directory, label, piff_name), 'data', mode='w')
                     logger.info('Finished creating h5 files for {0} stars using shapes, model shapes, data-model shapes, and params'.format(label))
 
+                    # Create oned moment histograms
+                    make_oned_hists_pdf(shapes, directory, label, "{1}_opt_only".format(piff_name))
+
                     # Create plot_2dhist_shapes graphs
                     logger.info('Preparing to create plot_2dhist_shapes graphs for {0} stars'.format(label))
                     # Make plot_2dhist_shapes graphs
@@ -674,10 +852,11 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
             cpu_time_across_stars = []
             number_of_successful_fits = 0
             for star_i, star in zip(range(len(psf.stars)), psf.stars):
-                start_time = time.clock()
-                if star_i % 100 == 0:
-                    logger.info('Fitting star {0} of {1}'.format(star_i, len(psf.stars)))
-                try:
+                if star_i == len(psf.stars) - 1 and number_of_successful_fits == 0:
+                    logger.info('Failed individual atmo star fit for all stars but the last! Will now attempt to do the last without a try-except statement.')
+                    start_time = time.clock()
+                    if star_i % 100 == 0:
+                        logger.info('Fitting star {0} of {1}'.format(star_i, len(psf.stars)))
                     model_fitted_star = psf.fit_model(star, params=params[star_i], logger=logger)
                     new_stars.append(model_fitted_star)
                     logger.info('chisq for star {0}: {1}'.format(star_i, model_fitted_star.fit.chisq))
@@ -688,11 +867,27 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     logger.info('clock time for star {0}: {1}'.format(star_i, time.clock() - start_time))
                     cpu_time_across_stars.append(time.clock() - start_time)
                     number_of_successful_fits = number_of_successful_fits + 1
-                except (KeyboardInterrupt, SystemExit):
-                    raise
-                except Exception as e:
-                    logger.warning('{0}'.format(str(e)))
-                    logger.warning('Warning! Failed to fit atmosphere model for star {0}. Ignoring star in atmosphere fit'.format(star_i))
+
+                else:
+                    start_time = time.clock()
+                    if star_i % 100 == 0:
+                        logger.info('Fitting star {0} of {1}'.format(star_i, len(psf.stars)))
+                    try:
+                        model_fitted_star = psf.fit_model(star, params=params[star_i], logger=logger)
+                        new_stars.append(model_fitted_star)
+                        logger.info('chisq for star {0}: {1}'.format(star_i, model_fitted_star.fit.chisq))
+                        logger.info('dof for star {0}: {1}'.format(star_i, model_fitted_star.fit.dof))
+                        logger.info('atmo_size for star {0}: {1}'.format(star_i, model_fitted_star.fit.params[0]))
+                        logger.info('atmo_g1 for star {0}: {1}'.format(star_i, model_fitted_star.fit.params[1]))
+                        logger.info('atmo_g2 for star {0}: {1}'.format(star_i, model_fitted_star.fit.params[2]))
+                        logger.info('clock time for star {0}: {1}'.format(star_i, time.clock() - start_time))
+                        cpu_time_across_stars.append(time.clock() - start_time)
+                        number_of_successful_fits = number_of_successful_fits + 1
+                    except (KeyboardInterrupt, SystemExit):
+                        raise
+                    except Exception as e:
+                        logger.warning('{0}'.format(str(e)))
+                        logger.warning('Warning! Failed to fit atmosphere model for star {0}. Ignoring star in atmosphere fit'.format(star_i))
             plt.figure()
             plt.scatter(x=list(range(0,number_of_successful_fits)),y=cpu_time_across_stars, alpha=0.1, s=0.2)
             plt.savefig("{0}/cpu_time_across_stars.png".format(directory))
@@ -846,25 +1041,51 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
             interp_keys = interp_keys + ['noatmo']
         for interp_key in interp_keys:
             piff_name = '{0}_{1}'.format(config_file_name, interp_key)
-            logger.info('Fitting optatmo interpolate for {0}'.format(interp_key))
-            if interp_key == 'noatmo':
-                psf.atmo_interp = None
-                psf._enable_atmosphere = False
+            if not final_graphs_only:
+                logger.info('Fitting optatmo interpolate for {0}'.format(interp_key))
+                if interp_key == 'noatmo':
+                    psf.atmo_interp = None
+                    psf._enable_atmosphere = False
+                else:
+                    # fit interps
+                    config_interp = interps[interp_key]
+
+                    if do_meanify:
+                        config_interp['average_fits'] = meanify_file_path
+                        piff_name += '_meanified'
+
+                    fit_interp(psf.stars, config_interp, psf, logger)
+
+                # Save the PSF, and the data stars (test and train)
+                out_path = '{0}/{1}.piff'.format(directory, piff_name)
+                psf.write(out_path, logger=logger)
+                test_stars = psf.test_stars
+                write_stars(test_stars, out_path)
             else:
-                # fit interps
-                config_interp = interps[interp_key]
+                # retrieve PSF with atmo-interpolation and stars
+                logger.info('Retrieving optatmo interpolate for {0}'.format(interp_key))
+                if interp_key == 'noatmo':
+                    psf.atmo_interp = None
+                    psf._enable_atmosphere = False
+                else:
+                    if do_meanify:
+                        piff_name += '_meanified'
 
-                if do_meanify:
-                    config_interp['average_fits'] = meanify_file_path
-                    piff_name += '_meanified'
+                # load base optics psf
+                out_path = '{0}/{1}.piff'.format(directory, piff_name)
+                logger.info('Loading saved PSF at {0}'.format(out_path))
+                psf = piff.read(out_path)
 
-                fit_interp(psf.stars, config_interp, psf, logger)
+                # load images for train stars
+                logger.info('loading train stars')
+                psf.stars = load_star_images(psf.stars, config, logger=logger)
 
-            # Save the PSF, and the data stars (test and train)
-            out_path = '{0}/{1}.piff'.format(directory, piff_name)
-            psf.write(out_path, logger=logger)
-            test_stars = psf.test_stars
-            write_stars(test_stars, out_path)
+                # load test stars and their images
+                logger.info('loading test stars')
+                test_stars = read_stars(out_path, logger=logger)
+                test_stars = load_star_images(test_stars, config, logger=logger)
+                psf.test_stars = test_stars
+
 
 
 ########################################################################
@@ -947,6 +1168,9 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 shapes.to_hdf('{0}/shapes_{1}_{2}.h5'.format(directory, label, piff_name), 'data', mode='w')
                 logger.info('Finished creating h5 files for {0} stars using shapes, model shapes, data-model shapes, and params (& fit params if train stars)'.format(label))
 
+                # Create oned moment histograms
+                make_oned_hists_pdf(shapes, directory, label, piff_name)
+
                 # Create plot_2dhist_shapes graphs
                 logger.info('Preparing to create plot_2dhist_shapes graphs for {0} stars'.format(label))
                 # Make plot_2dhist_shapes graphs
@@ -997,16 +1221,6 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     stars = new_stars
                     logger.info('Finished fitting the fluxes and centers of {0} test stars (this section is skipped if train stars)'.format(len(stars)))
 
-                # Write all Stats Outputs
-                logger.info('Preparing to write Stats Output of {0} stars'.format(label))
-                for stat in output.stats_list:
-                    if str(type(stat)) == "<class 'piff.twod_stats.TwoDHistStats'>" or str(type(stat)) == "<class 'piff.star_stats.StarStats'>":
-                        continue
-                    stat.compute(psf, stars, logger=logger)
-                    file_name = '{0}/{1}_{2}_{3}'.format(directory, label, piff_name, os.path.split(stat.file_name)[1])
-                    stat.write(file_name=file_name, logger=logger)
-                    logger.info('Succeeded for the stars output: {0}'.format(file_name))
-                logger.info('Finished writing Stats Output of {0} stars'.format(label))
                 if label == "train":
                     psf.stars = stars
                 if label == "test":
@@ -1083,15 +1297,22 @@ if __name__ == '__main__':
     parser.add_argument('--print_log', action='store_true', dest='print_log',
                         help='print logging instead of save')
     parser.add_argument('--fit_interp_only', action='store_true', dest='fit_interp_only',
-                        help='load up piff file and stars and only do the fit_interp portion')
+                        help='start fit after (previously done) individual atmo star fit')
     parser.add_argument('--config_file_name', action='store', dest='config_file_name',
                         help='name of the config file (without .yaml)')
     parser.add_argument('--meanify_file_path', action='store', dest='meanify_file_path',
                         default='',
                         help='path to meanify file. If not specified, or if not using optatmo, then ignored')
-    parser.add_argument('--opt_only', default="False")
-    parser.add_argument('--no_opt', default="False")
-    parser.add_argument('--no_interp', default="False")
+    parser.add_argument('--opt_only', action='store_true', dest='opt_only',
+                        help='only do the optical fit')
+    parser.add_argument('--no_opt', action='store_true', dest='no_opt',
+                        help='start fit after (previously done) optical fit')
+    parser.add_argument('--no_interp', action='store_true', dest='no_interp',
+                        help='stop fit right before the atmo interpolation')
+    parser.add_argument('--no_final_graphs', action='store_true', dest='no_final_graphs',
+                        help='stop fit right before the final graphs are made')
+    parser.add_argument('--final_graphs_only', action='store_true', dest='final_graphs_only',
+                        help='(having previously done everything else), do just the final graphs')
     options = parser.parse_args()
     kwargs = vars(options)
     fit_psf(**kwargs)

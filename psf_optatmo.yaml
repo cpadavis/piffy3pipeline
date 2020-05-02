@@ -224,7 +224,7 @@ output:
 # about the progress.
 verbose: 2
 
-time: 800
+time: 1200
 memory: 2
 test_fraction: 0.2 # save 20 percent
 
