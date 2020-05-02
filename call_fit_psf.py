@@ -25,14 +25,14 @@ def save_config(config, file_name):
 
 def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meanify, nmax, fit_interp_only, band, bands_meanified_separately, opt_only, no_opt, no_interp, no_final_graphs, final_graphs_only):
 
-    if opt_only and (no_opt or fit_interp_only or meanify final_graphs_only):
+    if opt_only and (no_opt or fit_interp_only or meanify or final_graphs_only):
         raise ValueError('You cannot both do only the optical fit and skip the optical fit.')
     if no_interp and (fit_interp_only or meanify or final_graphs_only):
         raise ValueError('You cannot both do only the atmo interp or part of it (like the final graphs) and skip the atmo interp.')
     if no_final_graphs and final_graphs_only:
         raise ValueError('You cannot both do only the final graphs and skip the final graphs.')
     run_config = piff.read_config(run_config_path)
-    if meanify or fit_interp_only or no_opt:
+    if True:
         psf_files = run_config['psf_optics_files']
     else:
         psf_files = run_config['psf_optics_files'] + run_config['psf_other_files']
