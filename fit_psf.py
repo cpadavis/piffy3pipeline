@@ -761,7 +761,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     logger.info('Finished creating h5 files for {0} stars using shapes, model shapes, data-model shapes, and params'.format(label))
 
                     # Create oned moment histograms
-                    make_oned_hists_pdf(shapes, directory, label, "{1}_opt_only".format(piff_name))
+                    make_oned_hists_pdf(shapes, directory, label, "{0}_opt_only".format(piff_name))
 
                     # Create plot_2dhist_shapes graphs
                     logger.info('Preparing to create plot_2dhist_shapes graphs for {0} stars'.format(label))

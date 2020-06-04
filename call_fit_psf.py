@@ -32,6 +32,7 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
     if no_final_graphs and final_graphs_only:
         raise ValueError('You cannot both do only the final graphs and skip the final graphs.')
     run_config = piff.read_config(run_config_path)
+    #if meanify or fit_interp_only or no_opt:
     if True:
         psf_files = run_config['psf_optics_files']
     else:
