@@ -585,15 +585,31 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     if s == 2:
                         logger.info("now prepping pull cuts for psf.fit_optics_stars; in other words the "
                                     "subset train stars specifically used in the optical fit")
-                    # make orthogonal moments' optical pull histograms
+
+                    # prep lists for shapes, model shapes, and shape errors
                     data_shapes_all_stars = []
                     data_errors_all_stars = []
                     model_shapes_all_stars = []
-                    for star_i, star in enumerate(stars):
+
+                   # Draw model stars in order to measure their shapes
+                    logger.info('Preparing to draw {0} {1} model stars'.format(len(stars), label))
+                    delete_list = []
+                    model_stars = psf.drawStarList(stars)
+                    logger.info('Preliminarily drew model stars. Will now identify stars failed to be drawn to throw them out.')
+                    for star_i, star in enumerate(model_stars):
+                        if star == None:
+                            delete_list.append(star_i)
+                    logger.info("delete_list: {0}".format(delete_list))
+                    stars = np.delete(stars, delete_list).tolist()
+                    model_stars = np.delete(model_stars, delete_list).tolist()
+                    logger.info('Finished drawing {0} {1} model stars. Some may have failed to be drawn and were thrown out.'.format(len(stars), label))
+
+                    # make orthogonal moments' optical pull histograms
+                    for star_i, star, model_star in zip(list(range(0,len(stars))), stars, model_stars):
                         try:
                             data_shape = psf.measure_shape_orthogonal(star)
                             data_error = psf.measure_error_orthogonal(star)
-                            model_shape = psf.measure_shape_orthogonal(psf.drawStar(star))
+                            model_shape = psf.measure_shape_orthogonal(model_star)
                             data_shapes_all_stars.append(data_shape)
                             data_errors_all_stars.append(data_error)
                             model_shapes_all_stars.append(model_shape)
@@ -966,22 +982,40 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                     logger.info('Number of Train Stars Before Atmo Pull Cuts: {0}'.format(len(stars)))
                 if s == 1:
                     logger.info('Number of Test Stars Before Atmo Pull Cuts: {0}'.format(len(stars)))
+
+                # prep lists for shapes, model shapes, and shape errors
                 data_shapes_all_stars = []
                 data_errors_all_stars = []
                 model_shapes_all_stars = []
-                for star_i, star in enumerate(stars):
+
+
+               # Draw model stars in order to measure their shapes
+                logger.info('Preparing to draw {0} {1} model stars'.format(len(stars), label))
+                delete_list = []
+                model_stars = psf.drawStarList(stars)
+                logger.info('Preliminarily drew model stars. Will now identify stars failed to be drawn to throw them out.')
+                for star_i, star in enumerate(model_stars):
+                    if star == None:
+                        delete_list.append(star_i)
+                logger.info("delete_list: {0}".format(delete_list))
+                stars = np.delete(stars, delete_list).tolist()
+                model_stars = np.delete(model_stars, delete_list).tolist()
+                logger.info('Finished drawing {0} {1} model stars. Some may have failed to be drawn and were thrown out.'.format(len(stars), label))
+
+                # make orthogonal moments' optical pull histograms
+                for star_i, star, model_star in zip(list(range(0,len(stars))), stars, model_stars):
                     try:
-                        data_shape = psf.measure_shape_third_moments(star)
-                        data_error = psf.measure_error_third_moments(star)
-                        model_shape = psf.measure_shape_third_moments(psf.drawStar(star))
+                        data_shape = psf.measure_shape_orthogonal_moments(star)
+                        data_error = psf.measure_error_orthogonal_moments(star)
+                        model_shape = psf.measure_shape_orthogonal_moments(model_star)
                         data_shapes_all_stars.append(data_shape)
                         data_errors_all_stars.append(data_error)
                         model_shapes_all_stars.append(model_shape)
                     except:
-                        logger.info('failed to do third moments analysis for pull cuts for star {0}'.format(star_i))
-                        data_shapes_all_stars.append(np.full(10,1000.0)) # throw out stars where pull cannot be measured
-                        data_errors_all_stars.append(np.full(10,1.0))
-                        model_shapes_all_stars.append(np.full(10,2.0))
+                        logger.info('failed to do orthogonal moments analysis for pull cuts for star {0}'.format(star_i))
+                        data_shapes_all_stars.append(np.full(13,1000.0)) # throw out stars where pull cannot be measured
+                        data_errors_all_stars.append(np.full(13,1.0))
+                        model_shapes_all_stars.append(np.full(13,2.0))
                 data_shapes_all_stars = np.array(data_shapes_all_stars)[:,3:]
                 data_errors_all_stars = np.array(data_errors_all_stars)[:,3:]
                 model_shapes_all_stars = np.array(model_shapes_all_stars)[:,3:]
