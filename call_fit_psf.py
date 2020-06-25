@@ -99,7 +99,25 @@ def call_fit_psf(run_config_path, bsub, check, call, print_log, overwrite, meani
             if config['psf']['type'] == 'OptAtmo':
            	# look up band information
                 # modify config band information
-                config['psf']['optical_psf_kwargs']['lam'] = filter_lam[filter_name]
+                config['psf']['optatmo_psf_kwargs']['lam'] = filter_lam[filter_name]
+            if config['psf']['reference_wavefront_file'] == "multi-band":
+                if filter_name == "u":
+                    config['psf']['reference_wavefront_file'] = config['psf']['reference_wavefront_file_name_u']
+                if filter_name == "g":
+                    config['psf']['reference_wavefront_file'] = config['psf']['reference_wavefront_file_name_g']
+                if filter_name == "r":
+                    config['psf']['reference_wavefront_file'] = config['psf']['reference_wavefront_file_name_r']
+                if filter_name == "i":
+                    config['psf']['reference_wavefront_file'] = config['psf']['reference_wavefront_file_name_i']
+                if filter_name == "z":
+                    config['psf']['reference_wavefront_file'] = config['psf']['reference_wavefront_file_name_z']
+                if filter_name == "Y":
+                    config['psf']['reference_wavefront_file'] = config['psf']['reference_wavefront_file_name_Y']
+
+
+
+
+
 
             if print_log:
                 config['verbose'] = 3

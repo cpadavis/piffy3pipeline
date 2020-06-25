@@ -166,16 +166,16 @@ psf:
 
     #max_shapes: [1.5, 0.12, 0.12, 0.15, 0.15, 0.15, 0.15, 1.5, 5.0, 50.0]
     shape_weights: [0.2, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+    reference_wavefront_file: /nfs/slac/kipac/fs1/g/des/aresh/lower_order_reference_wavefront_folder/Science-20140212s2-v22i2.fits
+    reference_wavefront_type: DECamWavefront
+    reference_wavefront_extname: 1
+    reference_wavefront_n_neighbors: 10
+    reference_wavefront_weights: distance
+    reference_wavefront_algorithm: auto
+    reference_wavefront_p: 2
     reference_wavefront_zernikes_list: [4, 5, 6, 7, 8, 9, 10, 11, 14, 15]
+    higher_order_reference_wavefront_file: /nfs/slac/kipac/fs1/g/des/aresh/higher_order_reference_wavefront_pickle/decam_2012-nominalzernike-protocol2.pickle
     higher_order_reference_wavefront_zernikes_list: [12, 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
-    reference_wavefront:
-        type: DECamWavefront
-        file_name: /nfs/slac/kipac/fs1/g/des/aresh/lower_order_reference_wavefront_folder/Science-20140212s2-v22i2.fits
-        extname: 1
-        n_neighbors: 10
-        weights: distance
-        algorithm: auto
-        p: 2
     atmo_interp: none
     n_optfit_stars: 0
     fov_radius: 4500.
@@ -183,7 +183,6 @@ psf:
     jmax_focal: 3
     min_optfit_snr: 40
     fit_optics_mode: shape
-    higher_order_reference_wavefront_file: /nfs/slac/kipac/fs1/g/des/aresh/higher_order_reference_wavefront_pickle/decam_2012-nominalzernike-protocol2.pickle
     random_forest_shapes_model_pickles_location: /nfs/slac/kipac/fs1/g/des/aresh/random_forest_shapes_model_pickles
     atmosphere_model: vonkarman
 
