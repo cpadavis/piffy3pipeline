@@ -580,11 +580,14 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 for s, stars in enumerate([psf.stars, psf.test_stars, psf.fit_optics_stars]):
                     if s == 0:
                         logger.info("now prepping pull cuts for psf.stars; in other words the train stars")
+                        label = "train"
                     if s == 1:
                         logger.info("now prepping pull cuts for psf.test_stars")
+                        label = "test"
                     if s == 2:
                         logger.info("now prepping pull cuts for psf.fit_optics_stars; in other words the "
                                     "subset train stars specifically used in the optical fit")
+                        label = "fit_optics"
 
                     # prep lists for shapes, model shapes, and shape errors
                     data_shapes_all_stars = []
@@ -976,12 +979,14 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 
 
 
-            # one extra round of outlier rejection using the pull from the moments (only up to third moments) after the individual star fit for the atmospheric parameters and the atmospheric parameter MAD cuts
+            # one extra round of outlier rejection using the pull from the moments after the individual star fit for the atmospheric parameters and the atmospheric parameter MAD cuts
             for s, stars in enumerate([psf.stars, psf.test_stars]):
                 if s == 0:
                     logger.info('Number of Train Stars Before Atmo Pull Cuts: {0}'.format(len(stars)))
+                    label = "train"
                 if s == 1:
                     logger.info('Number of Test Stars Before Atmo Pull Cuts: {0}'.format(len(stars)))
+                    label = "test"
 
                 # prep lists for shapes, model shapes, and shape errors
                 data_shapes_all_stars = []
