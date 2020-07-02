@@ -1007,7 +1007,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 model_stars = np.delete(model_stars, delete_list).tolist()
                 logger.info('Finished drawing {0} {1} model stars. Some may have failed to be drawn and were thrown out.'.format(len(stars), label))
 
-                # make orthogonal moments' optical pull histograms
+                # measure shapes and remove outliers
                 for star_i, star, model_star in zip(list(range(0,len(stars))), stars, model_stars):
                     try:
                         data_shape = psf.measure_shape_orthogonal_moments(star)
@@ -1130,6 +1130,10 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
 ########################################################################
 ########################################################################
 
+            # don't make the final graphs if specified not to
+            if no_final_graphs:
+                sys.exit()
+
             # Create graphs, h5 files, rho statistics (and other Stats Outputs) for both train and test stars  (also save a copy of the stars as npy files that includes the atmo params from this interpolation, includes the refluxing for the test stars, and excludes all stars that could not be used for graph-making).
             # Create graphs, h5 files, rho statistics (and other Stats Outputs) for both train and test stars.
             logger.info('Evaluating {0}'.format(piff_name))
@@ -1188,7 +1192,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                         shapes['{0}_var'.format(param_keys[i])] = params_var[:, i]
                     logger.info('Finished getting train fit params that were found in the individual atmo star fit')
                     logger.info('Preparing to get train params (from getParamsList())')
-                    params = psf.getParamsList(stars, trust_atmo_params_stored_in_stars=True)
+                    params = psf.getParamsList(stars, trust_interpolated_atmo_params_stored_in_stars=True)
                     for i in range(params.shape[1]):
                         shapes[param_keys[i]] = params[:, i]
                     logger.info('Finished getting train params (from getParamsList())')
@@ -1196,7 +1200,7 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 elif label == 'test':
                     # If test, get params (from getParamsList())
                     logger.info('Preparing to get test params (from getParamsList())')
-                    params = psf.getParamsList(stars, trust_atmo_params_stored_in_stars=True)
+                    params = psf.getParamsList(stars, trust_interpolated_atmo_params_stored_in_stars=True)
                     for i in range(params.shape[1]):
                         shapes[param_keys[i]] = params[:, i]
                     logger.info('Finished getting test params (from getParamsList())')
@@ -1263,15 +1267,14 @@ def fit_psf(directory, config_file_name, print_log, meanify_file_path='', fit_in
                 if label == "train":
                     psf.stars = stars
                 if label == "test":
-                    psf.test_stars = stars    
+                    psf.test_stars = stars  
+                # Save a copy of the data stars (test and train) to npy files; note that unlike the copy of these stars saved in the PSF, these have the atmo params from whatever atmospheric interpolation method being used (rather than taking the atmo params from the individual atmo star fit for train stars, for example); another thing to note is that stars saved here exclude stars that could not be used for graph-making; also note the test stars here have been refluxed
+                logger.info('Preparing to save {0} stars to npy files'.format(label))
+                np.save("{0}/stars_{1}_{2}.npy".format(directory, label, piff_name),np.array(stars))
+                logger.info('Finished saving {0} stars to npy files'.format(label))
+
+  
             logger.info('Finished creating graphs, h5 files, rho statistics (and other Stats Outputs) for both train and test stars.')
-
-
-
-            # Save a copy of the data stars (test and train) to npy files; note that unlike the copy of these stars saved in the PSF, these have the atmo params from whatever atmospheric interpolation method being used (rather than taking the atmo params from the individual atmo star fit for train stars, for example); another thing to note is that stars saved here exclude stars that could not be used for graph-making; also note the test stars here have been refluxed
-            logger.info('Preparing to save {0} stars to npy files'.format(label))
-            np.save("{0}/stars_{1}_{2}.npy".format(directory, label, piff_name),np.array(stars))
-            logger.info('Finished saving {0} stars to npy files'.format(label))
 
 
 ########################################################################
