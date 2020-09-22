@@ -9,6 +9,7 @@ matplotlib.use('Agg')
 
 import pandas as pd
 import numpy as np
+from scipy import stats
 import matplotlib.pyplot as plt
 
 import copy
@@ -129,6 +130,81 @@ def convert_two_d_plot_to_radial_plot(two_d_plot):
             y[y_index] = y[y_index]/y_bin_entries[y_index]
     return x,y
 
+def produce_flattened_arrays_of_x_and_y_coordinates_from_a_square_pixelgrid_centered_on_zero_all_stars(stamp_size, number_of_stars):
+    if stamp_size % 2 == 0:
+        odd = False
+    else:
+        odd = True
+    if odd:
+        x_for_pixels = np.arange(   -((stamp_size-1)/2)  ,   ((stamp_size-1)/2)+1   )
+    else:
+        x_for_pixels = np.arange(   -(stamp_size/2) +0.5    ,  (stamp_size/2)    +0.5   )
+    x_for_pixels = np.tile(x_for_pixels,(stamp_size,1))
+    y_for_pixels = x_for_pixels.T
+    x_for_pixels = x_for_pixels.flatten()
+    y_for_pixels = y_for_pixels.flatten()
+    x_for_pixels = np.tile(x_for_pixels, number_of_stars)
+    y_for_pixels = np.tile(y_for_pixels, number_of_stars)    
+    return x_for_pixels, y_for_pixels
+
+def produce_flattened_arrays_of_x_and_y_centrals_all_stars(stars):
+    stamp_size = len(stars[0].image.array[0])
+    x_centrals = []
+    y_centrals = []
+    for star in stars:
+        #print(star.fit.center)
+        #print(type(star.fit.center))
+        #print(star.fit.center[0])
+        #print(type(star.fit.center[0]))
+        #print(star.fit.center[1])
+        #print(type(star.fit.center[1]))
+        x_central_point = star.fit.center[0]
+        y_central_point = star.fit.center[1]
+        #print(x_central_point)
+        #print(type(x_central_point))
+        #print(x_central_point)
+        #print(type(x_central_point))
+        x_central = np.empty(stamp_size*stamp_size)
+        y_central = np.empty(stamp_size*stamp_size)
+        #print(x_central)
+        #print(type(x_central))
+        #print(x_central)
+        #print(type(x_central))
+        #print("")
+        x_central.fill(x_central_point)
+        y_central.fill(y_central_point)
+        #print(x_central)
+        #print(type(x_central))
+        #print(x_central)
+        #print(type(x_central))        
+        x_central = x_central.tolist()
+        y_central = y_central.tolist()
+        x_centrals = x_centrals + x_central
+        y_centrals = y_centrals + y_central
+    x_centrals = np.array(x_centrals)
+    y_centrals = np.array(y_centrals)
+    return x_centrals, y_centrals
+
+def get_radial_distances_given_x_and_y_for_pixels_and_x_and_y_centrals(x_for_pixels, y_for_pixels, x_centrals, y_centrals):
+    x_distances = x_for_pixels - x_centrals
+    y_distances = y_for_pixels - y_centrals
+    row_stacked_distances = np.row_stack([x_distances, y_distances])
+    radial_distances = np.linalg.norm(row_stacked_distances, axis=0)
+    return radial_distances
+
+def get_x_label_kind_high_res_given_refluxed_stars(refluxed_stars):
+    stars = refluxed_stars
+    stamp_size = len(stars[0].image.array[0])
+    number_of_stars = len(stars)  
+    x_for_pixels, y_for_pixels = produce_flattened_arrays_of_x_and_y_coordinates_from_a_square_pixelgrid_centered_on_zero_all_stars(stamp_size=stamp_size, number_of_stars=number_of_stars) 
+
+    x_centrals, y_centrals = produce_flattened_arrays_of_x_and_y_centrals_all_stars(stars)
+
+    radial_distances = get_radial_distances_given_x_and_y_for_pixels_and_x_and_y_centrals(x_for_pixels=x_for_pixels, y_for_pixels=y_for_pixels, x_centrals=x_centrals, y_centrals=y_centrals)
+    return radial_distances
+        
+        
+
 def make_star_residual_plots(exposure, core_directory, psf_type):
     directory = "{0}/00{1}".format(core_directory, exposure)
     graph_values_directory = "{0}/graph_values_npy_storage".format(core_directory)
@@ -154,10 +230,14 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
                 star_label = stars_label[sl]
                 try:
                     pre_drawn_star = psf.reflux(star_label, param)
+                    #print(pre_drawn_star.fit.center)
+                    #print(type(pre_drawn_star.fit.center))
                     pre_drawn_stars.append(pre_drawn_star)
                 except:
                     early_delete_list.append(sl)
-            stars_label = np.delete(stars_label, early_delete_list)                    
+            stars_label = np.delete(stars_label, early_delete_list)         
+            #print(pre_drawn_stars[0].fit.center)
+            #print(type(pre_drawn_stars[0].fit.center))           
             stars_label_fitted = psf.drawStarList(pre_drawn_stars)
         else:
             for sl, star_label in enumerate(stars_label):
@@ -175,6 +255,9 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
                     delete_list.append(star_i)    
         stars_label = np.delete(stars_label, delete_list)
         stars_label_fitted = np.delete(stars_label_fitted, delete_list)
+        pre_drawn_stars = np.delete(pre_drawn_stars, delete_list)
+        #print(pre_drawn_stars[0].fit.center)
+        #print(type(pre_drawn_stars[0].fit.center))
         print("finished fitting {0} stars".format(label))
         
         side_length = len(stars_label[0].image.array)
@@ -196,6 +279,18 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
         for slk, stars_label_kind in enumerate(stars_label_kinds):
             star_plots = stars_label_kind
             star_plots = star_plots / norm_blown_up
+            if slk == 2:
+                #print(pre_drawn_stars[0].fit.center)
+                #print(type(pre_drawn_stars[0].fit.center))                
+                x_label_kind_high_res = get_x_label_kind_high_res_given_refluxed_stars(pre_drawn_stars)
+                y_label_kind_high_res = star_plots.flatten()
+                max_distance = np.hypot(side_length-0.5, side_length-0.5)
+                range_max = np.around(max_distance*2.0)/2.0
+                number_of_bins = range_max / 0.5
+                y_label_kind_high_res, bin_edges, binnumber = stats.binned_statistic(x=x_label_kind_high_res,values=y_label_kind_high_res, statistic="mean",bins=number_of_bins, range=(0.0,range_max)) #TODO: un-hardcode this
+                number_of_bins = len(bin_edges) - 1
+                bin_width = range_max/number_of_bins
+                x_label_kind_high_res = bin_edges[1:] - bin_width/2.0
             label_kind_average_plot = np.mean(star_plots, axis=0)
             label_kind_average_plots.append(label_kind_average_plot)
             plt.figure()
@@ -216,8 +311,12 @@ def make_star_residual_plots(exposure, core_directory, psf_type):
             radial_information[2*k] = x_label_kind
             radial_information[1+2*k] = y_label_kind
             plt.scatter(x_label_kind,y_label_kind, label=capital_kind_names[k])
-            np.save("{0}/x_{1}_{2}_{3}_".format(graph_values_directory, label, kind_names[k], exposure) + psf_type + ".npy", x_label_kind)
-            np.save("{0}/y_{1}_{2}_{3}_".format(graph_values_directory, label, kind_names[k], exposure) + psf_type + ".npy", y_label_kind)          
+            if k != 2:
+                np.save("{0}/x_{1}_{2}_{3}_".format(graph_values_directory, label, kind_names[k], exposure) + psf_type + ".npy", x_label_kind)
+                np.save("{0}/y_{1}_{2}_{3}_".format(graph_values_directory, label, kind_names[k], exposure) + psf_type + ".npy", y_label_kind)    
+            else:
+                np.save("{0}/x_{1}_{2}_{3}_".format(graph_values_directory, label, kind_names[k], exposure) + psf_type + ".npy", x_label_kind_high_res)
+                np.save("{0}/y_{1}_{2}_{3}_".format(graph_values_directory, label, kind_names[k], exposure) + psf_type + ".npy", y_label_kind_high_res)      
         plt.legend()
         plt.title('Average Data, Model, and Difference for T{0} Stars normalized by data star flux'.format(label[1:]))
         #plt.savefig('{0}/stars_{1}_radial_'.format(directory, label) + psf_type + '.png')
